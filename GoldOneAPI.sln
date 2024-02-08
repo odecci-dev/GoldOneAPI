@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33103.184
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GoldOneAPI", "GoldOneAPI\GoldOneAPI.csproj", "{1231F8E2-1193-49D7-A4D2-892C9D0F0EC1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1231F8E2-1193-49D7-A4D2-892C9D0F0EC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1231F8E2-1193-49D7-A4D2-892C9D0F0EC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1231F8E2-1193-49D7-A4D2-892C9D0F0EC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1231F8E2-1193-49D7-A4D2-892C9D0F0EC1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {68CD3870-2F14-4E90-8F30-0C8CC34E691C}
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		version = 6.0
+	EndGlobalSection
+EndGlobal

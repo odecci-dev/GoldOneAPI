@@ -1,0 +1,78 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+ <EnvironmentName>Development</EnvironmentName>
+
+ <ReleaseVersion>6.0</ReleaseVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Controllers\JobInformationController.cs" />
+    <Compile Remove="Controllers\WeatherForecastController.cs" />
+    <Compile Remove="Models\ApplicationDbContext.cs" />
+    <Compile Remove="Models\AuditTrailModel.cs" />
+    <Compile Remove="Models\BusinessLocation.cs" />
+    <Compile Remove="Models\BusinessTypeModel.cs" />
+    <Compile Remove="Models\CorporateModel.cs" />
+    <Compile Remove="Models\CorporatePrivilegeLogsModel.cs" />
+    <Compile Remove="Models\CorporatePrivilegesModel.cs" />
+    <Compile Remove="Models\MembershipModel.cs" />
+    <Compile Remove="Models\OfferingModel.cs" />
+    <Compile Remove="Models\PositionModel.cs" />
+    <Compile Remove="Models\PrivilegeModel.cs" />
+    <Compile Remove="Models\qrAuditTrailModel.cs" />
+    <Compile Remove="Models\QrCodeLogsModel.cs" />
+    <Compile Remove="Models\RefreshToken.cs" />
+    <Compile Remove="Models\RegistrationOTPModel.cs" />
+    <Compile Remove="Models\StatusModel.cs" />
+    <Compile Remove="Models\UserMembershipModel.cs" />
+    <Compile Remove="Models\UserPrivilegeModel.cs" />
+    <Compile Remove="Models\UsersModel.cs" />
+    <Compile Remove="Models\UserTypeModel.cs" />
+    <Compile Remove="Models\VendorModel.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.2" />
+    <PackageReference Include="Jace" Version="1.0.0" />
+    <PackageReference Include="AngouriMath" Version="1.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Program.fs" />
+  </ItemGroup>
+</Project>
