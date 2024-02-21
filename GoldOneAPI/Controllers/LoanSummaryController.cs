@@ -145,16 +145,38 @@ namespace GoldOneAPI.Controllers
                 return BadRequest("ERROR");
             }
         }
+        [HttpPost]
+        public async Task<IActionResult> UpdateLoanBalance()
+        {
+            try
+            {
 
+                string sql = "";
+                string areafilter = $@"select NAID,MemId from tbl_Application_Model where status = 14";
+                DataTable area_table = db.SelectDb(areafilter).Tables[0];
+                foreach (DataRow dr in area_table.Rows)
+                {
+                    var loan_bal = dbmet.GetLoanSummary(dr["NAID"].ToString()).FirstOrDefault();
+                    sql += $@"update tbl_LoanHistory_Model set OutstandingBalance ='" + loan_bal.LoanBalance + "' where MemId='" + loan_bal.MemId + "'";
+
+                }
+                return Ok(db.AUIDB_WithParam(sql));
+            }
+
+            catch (Exception ex)
+            {
+                return BadRequest("ERROR");
+            }
+        }
         [HttpGet]
-        public async Task<IActionResult> GetLoanSummaryComputation(string naid, string? loanamount , string? loantype)
+        public async Task<IActionResult> GetLoanSummaryComputation(string naid, string? loanamount, string? loantype)
         {
 
-           
+
             //var result = new List<CreditModel>();
             try
             {
-            
+
                 return Ok(dbmet.LoanSummaryRecompute(naid, loanamount, loantype).ToList());
             }
 

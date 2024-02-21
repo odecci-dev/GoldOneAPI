@@ -39,8 +39,8 @@ namespace GoldOneAPI.Controllers
         #region Model
         public class FormulaVM
         {
-            public string  Formula { get; set; }
-            public string  FormulaID { get; set; }
+            public string Formula { get; set; }
+            public string FormulaID { get; set; }
         }
         public class CollectionTypeVM
         {
@@ -50,10 +50,14 @@ namespace GoldOneAPI.Controllers
         public class LoanHistoryVM
         {
             public string LoanAmount { get; set; }
+            public string loanPrincipal { get; set; }
             public string Savings { get; set; }
+            public string totalSavingsAmount { get; set; }
             public string Penalty { get; set; }
             public string OutStandingBalance { get; set; }
+            public string amountDue { get; set; }
             public string DateReleased { get; set; }
+            public string releasingDate { get; set; }
             public string DueDate { get; set; }
             public string DateCreated { get; set; }
             public string DateOfFullPayment { get; set; }
@@ -65,6 +69,7 @@ namespace GoldOneAPI.Controllers
             public string Lname { get; set; }
             public string Suffix { get; set; }
             public string Status { get; set; }
+            public string NAID { get; set; }
         }
         public class TermsVM
         {
@@ -81,7 +86,7 @@ namespace GoldOneAPI.Controllers
 
             public string Loan_amount_GreaterEqual_Amount { get; set; }
 
-       
+
 
 
             public string Loan_amount_GreaterEqual { get; set; }
@@ -156,7 +161,7 @@ namespace GoldOneAPI.Controllers
 
                 int arrayToRemoveIndex = 1;
 
-                 result = dbmet.GetLoanFormulaList().Where((arr, index) => index != arrayToRemoveIndex).ToList();
+                result = dbmet.GetLoanFormulaList().Where((arr, index) => index != arrayToRemoveIndex).ToList();
 
                 return Ok(result);
             }
@@ -165,7 +170,7 @@ namespace GoldOneAPI.Controllers
             {
                 return BadRequest("ERROR");
             }
-        } 
+        }
         [HttpGet]
         public async Task<IActionResult> GetCollectionType()
         {
@@ -216,17 +221,17 @@ namespace GoldOneAPI.Controllers
                     result = db.AUIDB_WithParam(Insert) + " Added";
 
                     sql = $@"select Top(1) LoanTypeID from tbl_LoanType_Model order by id desc";
-                
+
 
 
                     DataTable table = db.SelectDb(sql).Tables[0];
-                    var loantypeid = table.Rows.Count== 0 ? "LT-01" : table.Rows[0]["LoanTypeID"].ToString();
+                    var loantypeid = table.Rows.Count == 0 ? "LT-01" : table.Rows[0]["LoanTypeID"].ToString();
 
-                   
+
 
                     if (data.Terms.Count != 0)
                     {
-                       
+
 
                         for (int i = 0; i < data.Terms.Count; i++)
                         {
@@ -284,7 +289,7 @@ namespace GoldOneAPI.Controllers
                             result = db.AUIDB_WithParam(Insert1) + " Added";
                         }
                     }
-            
+
                     return Ok(result);
                 }
                 else
@@ -354,18 +359,18 @@ namespace GoldOneAPI.Controllers
                 for (int x = 0; x < data.Count; x++)
                 {
                     sql = $@"select * from tbl_TermsOfPayment_Model where TopId ='" + data[x].topId + "' ";
-                DataTable table1 = db.SelectDb(sql).Tables[0];
-                if (table1.Rows.Count != 0)
-                {
-                
-
-                    Delete = $@"UPDATE [dbo].[tbl_TermsOfPayment_Model] Set Status = 2 Where TopId ='" + data[x].topId + "' ";
+                    DataTable table1 = db.SelectDb(sql).Tables[0];
+                    if (table1.Rows.Count != 0)
+                    {
 
 
-                    result = db.AUIDB_WithParam(Delete) + " Deleted";
-              
+                        Delete = $@"UPDATE [dbo].[tbl_TermsOfPayment_Model] Set Status = 2 Where TopId ='" + data[x].topId + "' ";
+
+
+                        result = db.AUIDB_WithParam(Delete) + " Deleted";
+
                     }
-            
+
                     else
                     {
                         return BadRequest("Invalid");
@@ -401,7 +406,7 @@ namespace GoldOneAPI.Controllers
                               "[DateUpdated]='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' " +
                          "WHERE LoanTypeID ='" + data.LoanTypeID + "'";
 
-                    
+
                     results = db.AUIDB_WithParam(Update) + " Updated";
                     //string Delete = $@"DELETE FROM [dbo].[tbl_TermsOfPayment_Model]  where LoanTypeID ='" + data.LoanTypeID + "'  ";
                     //db.AUIDB_WithParam(Delete);
@@ -498,7 +503,7 @@ namespace GoldOneAPI.Controllers
 
                                 result = db.AUIDB_WithParam(Insert1) + " Added";
                             }
-                           
+
                         }
                     }
                     return Ok(results);
@@ -544,7 +549,8 @@ namespace GoldOneAPI.Controllers
             {
                 return BadRequest("ERROR");
             }
-        }   [HttpGet]
+        }
+        [HttpGet]
         public async Task<IActionResult> TermsFilterByLoanTypeID(string loantypeid)
         {
             try
@@ -559,7 +565,7 @@ namespace GoldOneAPI.Controllers
             }
         }
         [HttpGet]
-        public async Task<IActionResult> LoanTypeDetailsFilterPaginate(string? Loantypename , int page, int pageSize)
+        public async Task<IActionResult> LoanTypeDetailsFilterPaginate(string? Loantypename, int page, int pageSize)
         {
             var result = (dynamic)null;
             try
@@ -570,7 +576,7 @@ namespace GoldOneAPI.Controllers
                 int totalItems = 0;
                 int totalPages = 0;
                 var items = (dynamic)null;
-                if (Loantypename == null )
+                if (Loantypename == null)
                 {
                     var list = dbmet.GetLoanTypeDetails().ToList();
 
@@ -602,7 +608,7 @@ namespace GoldOneAPI.Controllers
                 };
 
 
-               
+
                 result = items == null ? "Null data" : items;
                 return Ok(result);
             }
@@ -633,8 +639,8 @@ namespace GoldOneAPI.Controllers
 
             try
             {
-                var result = dbmet.GetLoanTypeDetails().Where(a=>a.LoanTypeID == data.LoanTypeID).ToList();
-                if(result.Count !=0)
+                var result = dbmet.GetLoanTypeDetails().Where(a => a.LoanTypeID == data.LoanTypeID).ToList();
+                if (result.Count != 0)
                 {
                     return Ok(result);
                 }

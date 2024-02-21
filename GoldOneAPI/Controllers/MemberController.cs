@@ -498,13 +498,13 @@ namespace GoldOneAPI.Controllers
             }
         }
         [HttpGet]
-        public async Task<IActionResult> Member_FilterByActive(string status , int applicationStatus)
+        public async Task<IActionResult> Member_FilterByActive(string status, int applicationStatus)
         {
             var result = (dynamic)null;
             //var result = new List<CreditModel>();
             try
             {
-                result = dbmet.GetMemberList().Where(a=>a.Status == status && a.ApplicationStatus == applicationStatus.ToString()).ToList();
+                result = dbmet.GetMemberList().Where(a => a.Status == status && a.ApplicationStatus == applicationStatus.ToString()).ToList();
                 return Ok(result);
             }
 
@@ -567,7 +567,7 @@ namespace GoldOneAPI.Controllers
                 return BadRequest(results);
             }
         }
-        public class MemberDisplay  
+        public class MemberDisplay
         {
             public string? Borrower { get; set; }
             public string? Status { get; set; }
@@ -612,7 +612,7 @@ namespace GoldOneAPI.Controllers
 
         }
         [HttpGet]
-        public async Task<IActionResult> Member_DisplayList(int page, int pageSize, string? MemberName,string? status)
+        public async Task<IActionResult> Member_DisplayList(int page, int pageSize, string? MemberName, string? status)
         {
             var result = (dynamic)null;
             try
@@ -672,11 +672,11 @@ namespace GoldOneAPI.Controllers
             public string? Age { get; set; }
 
         }
-   
+
         [HttpPost]
-        public IActionResult Member_ValidationOnChange (MemberOnChange data)
+        public IActionResult Member_ValidationOnChange(MemberOnChange data)
         {
-            
+
             string applicationfilter = $@"select tbl_Application_Model.NAID
                                 from
                                 tbl_Application_Model inner join
@@ -687,7 +687,7 @@ namespace GoldOneAPI.Controllers
                                 tbl_CoMaker_Model on tbl_CoMaker_Model.MemId = tbl_Member_Model.MemId
                                 where  tbl_Member_Model.Fname ='" + data.Fname + "' and tbl_Member_Model.Mname ='" + data.Mname + "'" +
                             "and  tbl_Member_Model.Lname ='" + data.Lname + "' and tbl_Member_Model.POB ='" + data.POB + "'" +
-                            "and tbl_Member_Model.Barangay = '" + data.Barangay + "' and tbl_Member_Model.Age='" + data.Age+ "' and tbl_Member_Model.DOB='" + data.DOB+"'";
+                            "and tbl_Member_Model.Barangay = '" + data.Barangay + "' and tbl_Member_Model.Age='" + data.Age + "' and tbl_Member_Model.DOB='" + data.DOB + "'";
             DataTable tbl_applicationfilter = db.SelectDb(applicationfilter).Tables[0];
             if (tbl_applicationfilter.Rows.Count != 0)
             {
@@ -698,7 +698,7 @@ namespace GoldOneAPI.Controllers
             {
                 return BadRequest("No data");
             }
-          
+
 
         }
         [HttpPost]
@@ -716,7 +716,7 @@ namespace GoldOneAPI.Controllers
                                 where  tbl_Application_Model.Status in (8,9,10)
                                 and tbl_Member_Model.Fname ='" + data.Fname + "' and tbl_Member_Model.Mname ='" + data.Mname + "'" +
                             "and  tbl_Member_Model.Lname ='" + data.Lname + "' and tbl_Member_Model.POB ='" + data.POB + "'" +
-                            "and tbl_Member_Model.Barangay = '" + data.Barangay + "' and tbl_Member_Model.Age='" + data.Age + "' and tbl_Member_Model.DOB='" + data.DOB+"'";
+                            "and tbl_Member_Model.Barangay = '" + data.Barangay + "' and tbl_Member_Model.Age='" + data.Age + "' and tbl_Member_Model.DOB='" + data.DOB + "'";
             DataTable tbl_applicationfilter = db.SelectDb(applicationfilter).Tables[0];
             if (tbl_applicationfilter.Rows.Count != 0)
             {
@@ -727,7 +727,7 @@ namespace GoldOneAPI.Controllers
             {
 
             }
-           
+
             return Ok(result);
 
         }
@@ -767,34 +767,34 @@ namespace GoldOneAPI.Controllers
                 return BadRequest("ERROR");
             }
         }
-            [HttpGet]
-//        public async Task<IActionResult> GetPaymentHistory()
-//        {
+        [HttpGet]
+        //        public async Task<IActionResult> GetPaymentHistory()
+        //        {
 
-//            string sql = $@"SELECT      tbl_PaymentHistory_Model.MemId, tbl_PaymentHistory_Model.DateCreated, tbl_PaymentHistory_Model.Penalty, tbl_PaymentHistory_Model.PaymentType, tbl_PaymentHistory_Model.PaymentDate, 
-//                         tbl_PaymentHistory_Model.Collector, tbl_PaymentHistory_Model.PaidAmount, tbl_PaymentHistory_Model.OutStandingBalance, tbl_PaymentHistory_Model.LoanAmount
-//FROM            tbl_PaymentHistory_Model INNER JOIN
-//                         tbl_Member_Model ON tbl_PaymentHistory_Model.MemId = tbl_Member_Model.MemId ";
-//            var result = new List<PaymentHistory>();
-//            DataTable table = db.SelectDb(sql).Tables[0];
+        //            string sql = $@"SELECT      tbl_PaymentHistory_Model.MemId, tbl_PaymentHistory_Model.DateCreated, tbl_PaymentHistory_Model.Penalty, tbl_PaymentHistory_Model.PaymentType, tbl_PaymentHistory_Model.PaymentDate, 
+        //                         tbl_PaymentHistory_Model.Collector, tbl_PaymentHistory_Model.PaidAmount, tbl_PaymentHistory_Model.OutStandingBalance, tbl_PaymentHistory_Model.LoanAmount
+        //FROM            tbl_PaymentHistory_Model INNER JOIN
+        //                         tbl_Member_Model ON tbl_PaymentHistory_Model.MemId = tbl_Member_Model.MemId ";
+        //            var result = new List<PaymentHistory>();
+        //            DataTable table = db.SelectDb(sql).Tables[0];
 
-//            foreach (DataRow dr in table.Rows)
-//            {
-//                var datec = dr["DateCreated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateCreated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
-//                var item = new PaymentHistory(); item.LoanAmount = dr["LoanAmount"].ToString();
-//                item.MemId = dr["MemId"].ToString();
-//                item.OutStandingBalance = dr["OutStandingBalance"].ToString();
-//                item.PaidAmount = dr["PaidAmount"].ToString();
-//                item.Collector = dr["Collector"].ToString();
-//                item.PaymentDate = dr["PaymentDate"].ToString();
-//                item.PaymentType = dr["PaymentType"].ToString();
-//                item.Penalty = dr["Penalty"].ToString();
-//                item.DateCreated = datec;
-//                result.Add(item);
-//            }
+        //            foreach (DataRow dr in table.Rows)
+        //            {
+        //                var datec = dr["DateCreated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateCreated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+        //                var item = new PaymentHistory(); item.LoanAmount = dr["LoanAmount"].ToString();
+        //                item.MemId = dr["MemId"].ToString();
+        //                item.OutStandingBalance = dr["OutStandingBalance"].ToString();
+        //                item.PaidAmount = dr["PaidAmount"].ToString();
+        //                item.Collector = dr["Collector"].ToString();
+        //                item.PaymentDate = dr["PaymentDate"].ToString();
+        //                item.PaymentType = dr["PaymentType"].ToString();
+        //                item.Penalty = dr["Penalty"].ToString();
+        //                item.DateCreated = datec;
+        //                result.Add(item);
+        //            }
 
-//            return Ok(result);
-//        }
+        //            return Ok(result);
+        //        }
         [HttpPost]
         public IActionResult UpdateMemberInfo(List<SaveMemberModel> data)
         {
@@ -802,7 +802,7 @@ namespace GoldOneAPI.Controllers
             {
                 string filePath = @"C:\data\updatememberinfo.json"; // Replace with your desired file path
 
-       
+
 
                 dbmet.insertlgos(filePath, JsonSerializer.Serialize(data[0]));
                 string Update = "";
@@ -816,13 +816,13 @@ FROM            tbl_Member_Model INNER JOIN
                          tbl_Application_Model ON tbl_Member_Model.MemId = tbl_Application_Model.MemId where tbl_Member_Model.MemId ='" + data[0].MemId + "'";
                 DataTable dt = db.SelectDb(sql).Tables[0];
                 var result = new UserModel();
-                string city_ = Regex.Replace(data[0].Barangay.ToUpper() + data[0].City.ToUpper(), "[^a-zA-Z]", "");  
-                 System.IO.File.WriteAllText(filePath, JsonSerializer.Serialize(data[0]));
+                string city_ = Regex.Replace(data[0].Barangay.ToUpper() + data[0].City.ToUpper(), "[^a-zA-Z]", "");
+                System.IO.File.WriteAllText(filePath, JsonSerializer.Serialize(data[0]));
                 string areafilter = $@"SELECT [Id]
                                   ,[Area]
                                   ,[City]
                                    FROM [dbo].[tbl_Area_Model]
-                                    Where City like '%" + data[0].Barangay+ ", " + data[0].City + "%'";
+                                    Where City like '%" + data[0].Barangay + ", " + data[0].City + "%'";
                 DataTable area_table = db.SelectDb(areafilter).Tables[0];
                 var val_city = data[0].Barangay.ToLower() + ", " + data[0].City.ToLower();
                 //var val = area_table.Rows[0]["City"].ToString().ToLower().Split("|")[0];
@@ -835,17 +835,17 @@ FROM            tbl_Member_Model INNER JOIN
                 {
                     area_city = false;
                 }
-              
-                        if (area_table.Rows.Count == 0 && !area_city)
-                        {
-                            string insert_area = $@"INSERT INTO [dbo].[tbl_Area_Model]
+
+                if (area_table.Rows.Count == 0 && !area_city)
+                {
+                    string insert_area = $@"INSERT INTO [dbo].[tbl_Area_Model]
                                                ([Status],[City])
                                                 VALUES
                                                 ('1', " +
-                                                "'" +data[0].Barangay+ ", "+ data[0].City + "')";
-                            results = db.AUIDB_WithParam(insert_area) + " Added";
-                            }
-                
+                                        "'" + data[0].Barangay + ", " + data[0].City + "')";
+                    results = db.AUIDB_WithParam(insert_area) + " Added";
+                }
+
                 if (dt.Rows.Count != 0)
                 {
 
@@ -895,7 +895,12 @@ FROM            tbl_Member_Model INNER JOIN
                                   "[Emp_Status] ='" + data[0].Emp_Status + "' " +
                                     "where MemId='" + data[0].MemId + "'";
                     //FAM
-                    Update += $@"
+
+                    sql = $@"select CMID from tbl_FamBackground_Model where MemId='" + data[0].MemId + "'";
+                    DataTable famtbl = db.SelectDb(sql).Tables[0];
+                    if (famtbl.Rows.Count != 0)
+                    {
+                        string Insert_Fam = $@"
                                 UPDATE [dbo].[tbl_FamBackground_Model]
                                    SET 
                                        [Fname] = '" + data[0].F_Fname + "', " +
@@ -914,6 +919,46 @@ FROM            tbl_Member_Model INNER JOIN
                                       "[Status] = '1', " +
                                       "[DateUpdated]='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' " +
                                       "where MemId='" + data[0].MemId + "'";
+                        db.AUIDB_WithParam(Insert_Fam);
+
+                    }
+                    else
+                    {
+                        string Insert_Fam = $@"insert into   tbl_FamBackground_Model
+                               ([Fname]
+                                ,[Mname]
+                               ,[Lname]
+                               ,[Suffix]
+                               ,[DOB]
+                               ,[Age]
+                               ,[Emp_Status]
+                               ,[Position]
+                                ,[YOS]
+                               ,[CmpId]
+                               ,[NOD]
+                               ,[RTTB]
+                               ,[MemId]
+                               ,[Status]
+                               ,[DateCreated])
+                                values
+                                ('" + data[0].F_Fname + "'," +
+                                         "'" + data[0].F_Mname + "'," +
+                                         "'" + data[0].F_Lname + "'," +
+                                         "'" + data[0].F_Suffix + "'," +
+                                         "'" + Convert.ToDateTime(data[0].F_DOB).ToString("yyyy-MM-dd") + "'," +
+                                         "'" + data[0].F_Age + "'," +
+                                         "'" + data[0].F_Emp_Status + "'," +
+                                         "'" + data[0].F_Job + "'," +
+                                         "'" + data[0].F_YOS + "'," +
+                                         "'" + data[0].F_CompanyName + "'," +
+                                         "'" + data[0].F_NOD + "'," +
+                                         "'" + data[0].F_RTTB + "'," +
+                                         "'" + data[0].MemId + "'," +
+                                         "'1'," +
+                                          "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
+                        db.AUIDB_WithParam(Insert_Fam);
+                    }
+
                     //child
                     if (data[0].Child.Count != 0)
                     {
@@ -927,7 +972,7 @@ FROM            tbl_Member_Model INNER JOIN
 
                         for (int i = 0; i < data[0].Child.Count; i++)
                         {
-                   
+
                             Update += $@"INSERT INTO [dbo].[tbl_ChildInfo_Model]
                                    ([Fname]
                                    ,[Mname]
@@ -948,7 +993,7 @@ FROM            tbl_Member_Model INNER JOIN
                                          "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "')";
 
                         }
-                       
+
                     }
                     //business
                     if (data[0].Business.Count != 0)
@@ -1003,7 +1048,7 @@ FROM            tbl_Member_Model INNER JOIN
                                       "'" + data[0].Business[i].AOS + "'," +
                                       "'1'," +
                                       "'" + data[0].MemId + "'," +
-                                      "'" + result_ + "'," +
+                                      "'" + data[0].Business[0].BusinessFiles[i].FilePath + "'," +
                                        "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
                             db.AUIDB_WithParam(b_insert);
                         }
@@ -1052,18 +1097,59 @@ FROM            tbl_Member_Model INNER JOIN
                               "[DateUpdated]='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' " +
                               "where MemId='" + data[0].MemId + "'";
                     //co_job
-                    Update += $@"UPDATE [dbo].[tbl_CoMaker_JobInfo_Model]
+
+                    sql = $@"select CMID from tbl_CoMaker_JobInfo_Model where CMID='" + dt.Rows[0]["CMID"].ToString() + "'";
+                    DataTable table1 = db.SelectDb(sql).Tables[0];
+                    if (table1.Rows.Count != 0)
+                    {
+
+                        string insert_jobcomaker = $@"UPDATE [dbo].[tbl_CoMaker_JobInfo_Model]
                                SET [JobDescription] = '" + data[0].Co_JobDescription + "', " +
-                                  "[YOS] = '" + data[0].Co_YOS + "', " +
-                                  "[CompanyName] = '" + data[0].Co_CompanyName.Replace("'","''") + "', " +
-                                  "[CompanyAddress] = '" + data[0].Co_CompanyAddress + "', " +
-                                  "[MonthlySalary] = '" + data[0].Co_MonthlySalary + "', " +
-                                  "[OtherSOC] = '" + data[0].Co_OtherSOC + "', " +
-                                  "[Status] ='1', " +
-                                  "[DateUpdated]='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "', " +
-                                  "[BO_Status] = '" + data[0].Co_BO_Status + "', " +
-                                  "[Emp_Status] = '" + data[0].Co_Emp_Status + "'" +
-                                  "where CMID='" + dt.Rows[0]["CMID"].ToString() + "'";
+                                      "[YOS] = '" + data[0].Co_YOS + "', " +
+                                      "[CompanyName] = '" + data[0].Co_CompanyName.Replace("'", "''") + "', " +
+                                      "[CompanyAddress] = '" + data[0].Co_CompanyAddress + "', " +
+                                      "[MonthlySalary] = '" + data[0].Co_MonthlySalary + "', " +
+                                      "[OtherSOC] = '" + data[0].Co_OtherSOC + "', " +
+                                      "[Status] ='1', " +
+                                      "[DateUpdated]='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "', " +
+                                      "[BO_Status] = '" + data[0].Co_BO_Status + "', " +
+                                      "[Emp_Status] = '" + data[0].Co_Emp_Status + "'" +
+                                      "where CMID='" + dt.Rows[0]["CMID"].ToString() + "'";
+                        db.AUIDB_WithParam(insert_jobcomaker);
+                    }
+                    else
+                    {
+                        string insert_jobcomaker = $@"INSERT INTO [dbo].[tbl_CoMaker_JobInfo_Model]
+                               ([JobDescription]
+                               ,[YOS]
+                               ,[CompanyName]
+                               ,[MonthlySalary]
+                               ,[OtherSOC]
+                               ,[Status]
+                               ,[BO_Status]
+                               ,[Emp_Status]
+                               ,[CMID]
+                               ,[CompanyAddress]
+                               ,[DateCreated])
+                                values
+                                ('" + data[0].Co_JobDescription + "'," +
+                                "'" + data[0].Co_YOS + "'," +
+                                "'" + data[0].Co_CompanyName + "'," +
+                                "'" + data[0].Co_MonthlySalary + "'," +
+                                "'" + data[0].Co_OtherSOC + "'," +
+                                "'1'," +
+                                "'" + data[0].Co_BO_Status + "'," +
+                                "'" + data[0].Co_Emp_Status + "'," +
+                                "'" + dt.Rows[0]["CMID"].ToString() + "'," +
+                                "'" + data[0].Co_CompanyAddress + "'," +
+                                "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
+
+
+
+
+                        db.AUIDB_WithParam(insert_jobcomaker);
+                    }
+
 
 
 
@@ -1149,12 +1235,12 @@ FROM            tbl_Member_Model INNER JOIN
                     {
                         for (int x = 0; x < data[0].Co_SignatureUpload.Count; x++)
                         {
-                           co_signature_upload = $@"
+                            co_signature_upload = $@"
                                             UPDATE [dbo].[tbl_CoMakerFileUpload_Model]
                                                SET [FileName] = '" + data[0].Co_SignatureUpload[x].FileName + "', " +
-                                              "[FilePath] = '" + data[0].Co_SignatureUpload[x].FilePath + "', " +
-                                              "[DateCreated]='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' " +
-                                          "where CMID='" + dt.Rows[0]["CMID"].ToString() + "' and Status='3'";
+                                               "[FilePath] = '" + data[0].Co_SignatureUpload[x].FilePath + "', " +
+                                               "[DateCreated]='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' " +
+                                           "where CMID='" + dt.Rows[0]["CMID"].ToString() + "' and Status='3'";
                             db.AUIDB_WithParam(co_signature_upload);
 
                         }
@@ -1184,12 +1270,12 @@ FROM            tbl_Member_Model INNER JOIN
                         for (int x = 0; x < data[0].RequirementsFile.Count; x++)
                         {
 
-                           uploadfile_req = $@"
+                            uploadfile_req = $@"
                                             UPDATE [dbo].[tbl_fileupload_Model]
                                                SET [FileName] = '" + data[0].RequirementsFile[x].FileName + "', " +
-                                               "[FilePath] = '" + data[0].RequirementsFile[x].FilePath + "', " +
-                                               "[DateUpdated]='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' " +
-                                           "where MemId = '" + data[0].MemId + "' and Type = '2' ";
+                                                "[FilePath] = '" + data[0].RequirementsFile[x].FilePath + "', " +
+                                                "[DateUpdated]='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' " +
+                                            "where MemId = '" + data[0].MemId + "' and Type = '2' ";
                             db.AUIDB_WithParam(uploadfile_req);
 
                         }
@@ -1221,7 +1307,7 @@ FROM            tbl_Member_Model INNER JOIN
                 }
                 else
                 {
-                    
+
                     results = "Error! 0 Records Found Please Check Member ID if existing!--------->";
                     string filePath_ = @"C:\data\Update_MemberInfo_ErrorLogs.json"; // Replace with your desired file path
 
@@ -1303,7 +1389,7 @@ FROM            tbl_Member_Model INNER JOIN
                     item.DateCreated = datec;
                     item.DateUpdated = dateu;
                     item.ProfilePath = dr["ProfilePath"].ToString();
-                    result.Add(item); 
+                    result.Add(item);
                 }
 
                 return Ok(result);
@@ -1330,9 +1416,13 @@ FROM            tbl_Member_Model INNER JOIN
                 if (dt.Rows.Count != 0)
                 {
 
-                    string OTPInsert = $@"update tbl_Member_Model set Status='2' " +
+                    string deletemember = $@"update tbl_Member_Model set Status='2' " +
                                     "where MemId='" + data.MemId + "'";
-                    db.AUIDB_WithParam(OTPInsert);
+                    db.AUIDB_WithParam(deletemember);
+
+                    string deletecomaker = $@"update tbl_CoMaker_Model set Status='2' " +
+                                   "where MemId='" + data.MemId + "'";
+                    db.AUIDB_WithParam(deletecomaker);
                     results = "Successfully Deleted";
                     return Ok(results);
 
@@ -1535,10 +1625,11 @@ FROM            tbl_Member_Model INNER JOIN
 
         #endregion
 
-     
+
         [HttpPost]
         public IActionResult SaveAll(List<SaveMemberModel> data)
         {
+            string memid = "";
             string results = "";
             string Insert = "";
             string Update = "";
@@ -1557,7 +1648,7 @@ FROM            tbl_Member_Model INNER JOIN
                                   ,[Area]
                                   ,[City]
                                    FROM [dbo].[tbl_Area_Model]
-                                    Where City like '%" + data[0].Barangay+ ", " + data[0].City + "%'";
+                                    Where City like '%" + data[0].Barangay + ", " + data[0].City + "%'";
                 DataTable area_table = db.SelectDb(areafilter).Tables[0];
                 var val_city = data[0].Barangay.ToLower() + ", " + data[0].City.ToLower();
                 //var val = area_table.Rows[0]["City"].ToString().ToLower().Split("|")[0];
@@ -1570,17 +1661,17 @@ FROM            tbl_Member_Model INNER JOIN
                 {
                     area_city = false;
                 }
-              
-                        if (area_table.Rows.Count == 0 && !area_city)
-                        {
-                            string insert_area = $@"INSERT INTO [dbo].[tbl_Area_Model]
+
+                if (area_table.Rows.Count == 0 && !area_city)
+                {
+                    string insert_area = $@"INSERT INTO [dbo].[tbl_Area_Model]
                                                ([Status],[City])
                                                 VALUES
                                                 ('1', " +
-                                                "'" +data[0].Barangay+ ", "+ data[0].City + "')";
+                                        "'" + data[0].Barangay + ", " + data[0].City + "')";
                     saving.tbl_Area_Model = db.AUIDB_WithParam(insert_area);
                 }
-                
+
                 string applicationfilter = $@"select *
                                 from
                                 tbl_Application_Model inner join
@@ -1590,9 +1681,9 @@ FROM            tbl_Member_Model INNER JOIN
                                 tbl_FamBackground_Model on tbl_FamBackground_Model.MemId = tbl_Member_Model.MemId inner join
                                 tbl_CoMaker_Model on tbl_CoMaker_Model.MemId = tbl_Member_Model.MemId
                                 where  tbl_Application_Model.Status in (8,9,10)
-                                and tbl_Member_Model.Fname ='"+data[0].Fname+"' and tbl_Member_Model.Mname ='"+data[0].Mname+"'" +
-                                "and  tbl_Member_Model.Lname ='"+data[0].Lname+"' and tbl_Member_Model.POB ='"+data[0].POB+"'" +
-                                "and tbl_Member_Model.Barangay = '" + data[0].Barangay + "'";
+                                and tbl_Member_Model.Fname ='" + data[0].Fname + "' and tbl_Member_Model.Mname ='" + data[0].Mname + "'" +
+                                "and  tbl_Member_Model.Lname ='" + data[0].Lname + "' and tbl_Member_Model.POB ='" + data[0].POB + "'" +
+                                "and tbl_Member_Model.Barangay = '" + data[0].Barangay + "' and tbl_Member_Model.Status = 1 ";
                 DataTable tbl_applicationfilter = db.SelectDb(applicationfilter).Tables[0];
                 if (tbl_applicationfilter.Rows.Count != 0)
                 {
@@ -1606,21 +1697,21 @@ FROM            tbl_Member_Model INNER JOIN
                 }
                 else
                 {
-                   
+
 
 
                     string comaker_filter = $@"select * from
                                             tbl_CoMaker_Model
-                                            where Fname='"+data[0].Co_Fname+"'" +
-                                            "and Mname='"+data[0].Co_Mname+"' " +
-                                            "and Lnam='"+data[0].Co_Lname+"' ";
+                                            where Fname='" + data[0].Co_Fname + "'" +
+                                            "and Mname='" + data[0].Co_Mname + "' " +
+                                            "and Lnam='" + data[0].Co_Lname + "' and Status =1 ";
                     DataTable tbl_comaker = db.SelectDb(comaker_filter).Tables[0];
                     if (tbl_comaker.Rows.Count != 0)
                     {
 
 
                         //saving.NAID = naid;
-                        saving.promtresult = "Member Already Exist or Has a Pending Loans";
+                        saving.promtresult = "Co-Maker is Already Used!";
                         saving.promtresult_status = "ERROR";
                         //result.Result = "Member Already Exist or Has a Pending Loans";
                         //result.Status = "ERROR";
@@ -1628,14 +1719,14 @@ FROM            tbl_Member_Model INNER JOIN
                     }
                     else
                     {
-                    var validate_exist = dbmet.GetMemberList().Where(a => a.Fname == data[0].Fname && a.Lname ==
-                    data[0].Lname && a.POB == data[0].POB && Convert.ToDateTime(a.DOB).ToString("yyyy-MM-dd") ==
-                    Convert.ToDateTime(data[0].DOB).ToString("yyyy-MM-dd") && a.Barangay == data[0].Barangay).FirstOrDefault();
+                        var validate_exist = dbmet.GetMemberList().Where(a => a.Fname == data[0].Fname && a.Lname ==
+                        data[0].Lname && a.POB == data[0].POB && Convert.ToDateTime(a.DOB).ToString("yyyy-MM-dd") ==
+                        Convert.ToDateTime(data[0].DOB).ToString("yyyy-MM-dd") && a.Barangay == data[0].Barangay).FirstOrDefault();
                         if (validate_exist != null)
                         {
                             string loan_sql = $@"select * from
                                          tbl_LoanHistory_Model
-                                        where tbl_LoanHistory_Model.OutstandingBalance <> 0 and  tbl_LoanHistory_Model.MemId = ' "+ validate_exist.MemId + "'";
+                                        where tbl_LoanHistory_Model.OutstandingBalance <> 0 and  tbl_LoanHistory_Model.MemId = ' " + validate_exist.MemId + "'";
                             DataTable tbl_loan_result = db.SelectDb(loan_sql).Tables[0];
                             if (tbl_loan_result.Rows.Count != 0)
                             {
@@ -1734,12 +1825,12 @@ FROM            tbl_Member_Model INNER JOIN
 
                                 string child_val = $@"SELECT * FROM [dbo].[tbl_ChildInfo_Model]  where [FamId] = '" + validate_exist.FamId + "'";
                                 DataTable child_val_tbl = db.SelectDb(child_val).Tables[0];
-                                if(child_val_tbl.Rows.Count != 0)
+                                if (child_val_tbl.Rows.Count != 0)
                                 {
                                     string Delete = $@"DELETE FROM [dbo].[tbl_ChildInfo_Model]  where [FamId] = '" + validate_exist.FamId + "'";
                                     db.AUIDB_WithParam(Delete);
                                 }
-                            
+
 
                                 for (int i = 0; i < data[0].Child.Count; i++)
                                 {
@@ -1765,12 +1856,12 @@ FROM            tbl_Member_Model INNER JOIN
 
                                     saving.tbl_ChildInfo_Model = db.AUIDB_WithParam(childinfo);
                                 }
-                            
+
                             }
                             //business
                             if (data[0].Business.Count != 0)
                             {
-                           
+
                                 string businessval = $@"SELECT * FROM [dbo].[tbl_BusinessInformation_Model]  where MemId='" + data[0].MemId + "'";
                                 DataTable businessval_tbl = db.SelectDb(businessval).Tables[0];
                                 if (businessval_tbl.Rows.Count != 0)
@@ -1821,7 +1912,7 @@ FROM            tbl_Member_Model INNER JOIN
                                                           "'" + data[0].Business[i].AOS + "'," +
                                                           "'1'," +
                                                           "'" + data[0].MemId + "'," +
-                                                          "'" + result_ + "'," +
+                                                          "'" + data[0].Business[0].BusinessFiles[i].FilePath + "'," +
                                                            "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
                                     saving.tbl_BusinessInformation_Model = db.AUIDB_WithParam(b_insert);
                                 }
@@ -1944,7 +2035,7 @@ FROM            tbl_Member_Model INNER JOIN
                             }
 
 
-                            string application= $@"insert into   tbl_Application_Model
+                            string application = $@"insert into   tbl_Application_Model
                                ([MemId]
                                ,[Remarks]
                                ,[Status]
@@ -1962,11 +2053,11 @@ FROM            tbl_Member_Model INNER JOIN
                                             "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
 
                             saving.tbl_Application_Model = db.AUIDB_WithParam(application);
-                            sql = $@"select Top(1) NAID from tbl_Application_Model order by id desc";
+                            sql = $@"select   NAID from tbl_Application_Model order by id desc";
 
                             DataTable table = db.SelectDb(sql).Tables[0];
-                            var NAID = table.Rows[0]["NAID"].ToString();
-                           string loandetails= $@"insert into   tbl_LoanDetails_Model
+                            string NAID = table.Rows[0]["NAID"].ToString();
+                            string loandetails = $@"insert into   tbl_LoanDetails_Model
                                 ([LoanAmount]
                                ,[TermsOfPayment]
                                ,[Purpose]
@@ -1977,19 +2068,19 @@ FROM            tbl_Member_Model INNER JOIN
                                ,[DateCreated])
                                 values
                                 ('" + data[0].LoanAmount + "'," +
-                                    "'" + data[0].TermsOfPayment + "'," +
-                                    "'" + data[0].Purpose + "'," +
-                                    "'" + validate_exist.MemId + "'," +
-                                    "'1'," +
-                                    "'" + data[0].LoanTypeId + "'," +
-                                    "'" + NAID + "'," +
-                                     "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
+                                     "'" + data[0].TermsOfPayment + "'," +
+                                     "'" + data[0].Purpose + "'," +
+                                     "'" + validate_exist.MemId + "'," +
+                                     "'1'," +
+                                     "'" + data[0].LoanTypeId + "'," +
+                                     "'" + NAID + "'," +
+                                      "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
                             saving.tbl_LoanDetails_Model = db.AUIDB_WithParam(loandetails);
 
 
                             if (data[0].Appliances.Count != 0)
                             {
-                                sql = $@"select Top(1) NAID from tbl_Application_Model order by id desc";
+                                sql = $@"select   NAID from tbl_Application_Model order by id desc";
 
                                 DataTable na_table = db.SelectDb(sql).Tables[0];
                                 naid = na_table.Rows[0]["NAID"].ToString();
@@ -2012,10 +2103,10 @@ FROM            tbl_Member_Model INNER JOIN
                                                   "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "')";
                                     saving.tbl_Appliance_Model = db.AUIDB_WithParam(appliance);
                                 }
-                             
+
                             }
 
-                    
+
                             saving.NAID = naid;
                             saving.promtresult = promtresult;
                             saving.promtresult_status = promtresult_status;
@@ -2024,7 +2115,7 @@ FROM            tbl_Member_Model INNER JOIN
                         else
                         {
 
-                            
+
 
 
                             //member
@@ -2052,10 +2143,10 @@ FROM            tbl_Member_Model INNER JOIN
                                        "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "', " +
                                        "'" + data[0].Status + "') ";
                             saving.tbl_Member_Model = db.AUIDB_WithParam(Insert_MEM);
-                            sql = $@"select Top(1) MemId from tbl_Member_Model order by id desc";
+                            sql = $@"select   MemId from tbl_Member_Model order by id desc";
 
                             DataTable table = db.SelectDb(sql).Tables[0];
-                            var memid = table.Rows[0]["MemId"].ToString();
+                            memid = table.Rows[0]["MemId"].ToString();
                             //monthlybills
                             string loan_sql = $@"select * from
                                          tbl_LoanHistory_Model
@@ -2079,7 +2170,7 @@ FROM            tbl_Member_Model INNER JOIN
                                 dbmet.InsertNotification("Inserted New Borrower  " + memid + " from Application Creation",
                                     DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), "Application Module", name, dr["UserId"].ToString(), "2", memid);
                             }
-                            string  monthly = $@"INSERT INTO 
+                            string monthly = $@"INSERT INTO 
                                         [dbo].[tbl_MonthlyBills_Model]
                                        ([MemId]
                                        ,[ElectricBill]
@@ -2099,7 +2190,7 @@ FROM            tbl_Member_Model INNER JOIN
                             saving.tbl_MonthlyBills_Model = db.AUIDB_WithParam(monthly);
 
                             //jobinfo
-                            string jobinfo= $@"insert into   tbl_JobInfo_Model (
+                            string jobinfo = $@"insert into   tbl_JobInfo_Model (
                                 [JobDescription]
                                ,[YOS]
                                ,[CompanyName]
@@ -2120,7 +2211,7 @@ FROM            tbl_Member_Model INNER JOIN
                                          "'" + data[0].OtherSOC + "'," +
                                          "'" + data[0].Status + "'," +
                                          "'" + data[0].BO_Status + "'," +
-                                         "'"+data[0].Emp_Status+"'," +
+                                         "'" + data[0].Emp_Status + "'," +
                                          "'" + memid + "'," +
                                           "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
                             saving.tbl_JobInfo_Model = db.AUIDB_WithParam(jobinfo);
@@ -2168,76 +2259,12 @@ FROM            tbl_Member_Model INNER JOIN
                                               "'" + data[0].Business[i].AOS + "'," +
                                               "'1'," +
                                               "'" + memid + "'," +
-                                              "'" + _result + "'," +
+                                              "'" + data[0].Business[0].BusinessFiles[i].FilePath + "'," +
                                                "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
                                     saving.tbl_BusinessInformation_Model = db.AUIDB_WithParam(b_insert);
                                 }
                             }
-                            string Insert_Fam = $@"insert into   tbl_FamBackground_Model
-                               ([Fname]
-                                ,[Mname]
-                               ,[Lname]
-                               ,[Suffix]
-                               ,[DOB]
-                               ,[Age]
-                               ,[Emp_Status]
-                               ,[Position]
-                                ,[YOS]
-                               ,[CmpId]
-                               ,[NOD]
-                               ,[RTTB]
-                               ,[MemId]
-                               ,[Status]
-                               ,[DateCreated])
-                                values
-                                ('" + data[0].F_Fname + "'," +
-                                          "'" + data[0].F_Mname + "'," +
-                                          "'" + data[0].F_Lname + "'," +
-                                          "'" + data[0].F_Suffix + "'," +
-                                          "'" + Convert.ToDateTime(data[0].F_DOB).ToString("yyyy-MM-dd") + "'," +
-                                          "'" + data[0].F_Age + "'," +
-                                          "'" + data[0].F_Emp_Status + "'," +
-                                          "'" + data[0].F_Job + "'," +
-                                          "'" + data[0].F_YOS + "'," +
-                                          "'" + data[0].F_CompanyName + "'," +
-                                          "'" + data[0].F_NOD + "'," +
-                                          "'" + data[0].F_RTTB + "'," +
-                                          "'" + memid + "'," +
-                                          "'1'," +
-                                           "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
-                            saving.tbl_FamBackground_Model = db.AUIDB_WithParam(Insert_Fam);
 
-                            if (data[0].Child.Count != 0)
-                            {
-
-
-                                for (int i = 0; i < data[0].Child.Count; i++)
-                                {
-                                    sql = $@"select Top(1) FamId from tbl_FamBackground_Model order by id desc";
-
-                                    DataTable table1 = db.SelectDb(sql).Tables[0];
-                                    var famid = table1.Rows[0]["FamId"].ToString();
-                                    string childinfo= $@"INSERT INTO [dbo].[tbl_ChildInfo_Model]
-                                   ([Fname]
-                                   ,[Mname]
-                                   ,[Lname]
-                                   ,[Age]
-                                   ,[NOS]
-                                   ,[FamId]
-                                   ,[Status]
-                                   ,[DateCreated])
-                             VALUES
-                                   ('" + data[0].Child[i].Fname + "'," +
-                                               "'" + data[0].Child[i].Mname + "'," +
-                                               "'" + data[0].Child[i].Lname + "'," +
-                                               "'" + data[0].Child[i].Age + "'," +
-                                              "'" + data[0].Child[i].NOS + "'," +
-                                              "'" + famid + "'," +
-                                             "'1'," +
-                                                 "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "')";
-                                    saving.tbl_ChildInfo_Model = db.AUIDB_WithParam(childinfo);
-                                }
-                            }
                             //motor
                             if (data[0].Assets.Count != 0)
                             {
@@ -2247,7 +2274,7 @@ FROM            tbl_Member_Model INNER JOIN
                                 {
 
 
-                                    string assets= $@"INSERT INTO [dbo].[tbl_AssetsProperties_Model]
+                                    string assets = $@"INSERT INTO [dbo].[tbl_AssetsProperties_Model]
                                    ([MotorVehicles]
                                    ,[Status]
                                    ,[MemId]   
@@ -2295,7 +2322,7 @@ FROM            tbl_Member_Model INNER JOIN
                                 for (int i = 0; i < data[0].Bank.Count; i++)
                                 {
 
-                                   string bank= $@"INSERT INTO [dbo].[tbl_BankAccounts_Model]
+                                    string bank = $@"INSERT INTO [dbo].[tbl_BankAccounts_Model]
                         ([BankName]
                        ,[Address]
                        ,[Status]
@@ -2303,10 +2330,10 @@ FROM            tbl_Member_Model INNER JOIN
                        ,[DateCreated])
                          VALUES
                                ('" + data[0].Bank[i].BankName + "'," +
-                                                  "'" + data[0].Bank[i].Address + "'," +
-                                                  "'1'," +
-                                                  "'" + memid + "'," +
-                                                  "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "')";
+                                                   "'" + data[0].Bank[i].Address + "'," +
+                                                   "'1'," +
+                                                   "'" + memid + "'," +
+                                                   "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "')";
                                     saving.tbl_BankAccounts_Model = db.AUIDB_WithParam(bank);
                                 }
                             }
@@ -2333,7 +2360,7 @@ FROM            tbl_Member_Model INNER JOIN
                             }
                             if (data[0].NAID == string.Empty || data[0].NAID == null)
                             {
-                                string application= $@"insert into   tbl_Application_Model
+                                string application = $@"insert into   tbl_Application_Model
                                ([MemId]
                                ,[Remarks]
                                ,[Status]
@@ -2362,33 +2389,80 @@ FROM            tbl_Member_Model INNER JOIN
                                                   "where NAID='" + data[0].NAID + "'";
                                 saving.tbl_Application_Model = db.AUIDB_WithParam(application);
                             }
+                            string Insert_Fam = $@"insert into   tbl_FamBackground_Model
+                               ([Fname]
+                                ,[Mname]
+                               ,[Lname]
+                               ,[Suffix]
+                               ,[DOB]
+                               ,[Age]
+                               ,[Emp_Status]
+                               ,[Position]
+                                ,[YOS]
+                               ,[CmpId]
+                               ,[NOD]
+                               ,[RTTB]
+                               ,[MemId]
+                               ,[Status]
+                               ,[DateCreated])
+                                values
+                                ('" + data[0].F_Fname + "'," +
+                                          "'" + data[0].F_Mname + "'," +
+                                          "'" + data[0].F_Lname + "'," +
+                                          "'" + data[0].F_Suffix + "'," +
+                                          "'" + Convert.ToDateTime(data[0].F_DOB).ToString("yyyy-MM-dd") + "'," +
+                                          "'" + data[0].F_Age + "'," +
+                                          "'" + data[0].F_Emp_Status + "'," +
+                                          "'" + data[0].F_Job + "'," +
+                                          "'" + data[0].F_YOS + "'," +
+                                          "'" + data[0].F_CompanyName + "'," +
+                                          "'" + data[0].F_NOD + "'," +
+                                          "'" + data[0].F_RTTB + "'," +
+                                          "'" + memid + "'," +
+                                          "'1'," +
+                                           "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
+                            saving.tbl_FamBackground_Model = db.AUIDB_WithParam(Insert_Fam);
+                            sql = $@"select FamId from tbl_FamBackground_Model order by id desc";
 
-                            sql = $@"select Top(1) NAID from tbl_Application_Model order by id desc";
+                            DataTable fam_tbl = db.SelectDb(sql).Tables[0];
+                            string famid = fam_tbl.Rows[0]["FamId"].ToString();
+                            if (data[0].Child.Count != 0)
+                            {
+
+
+                                for (int i = 0; i < data[0].Child.Count; i++)
+                                {
+
+
+                                    string childinfo = $@"INSERT INTO [dbo].[tbl_ChildInfo_Model]
+                                   ([Fname]
+                                   ,[Mname]
+                                   ,[Lname]
+                                   ,[Age]
+                                   ,[NOS]
+                                   ,[FamId]
+                                   ,[Status]
+                                   ,[DateCreated])
+                             VALUES
+                                   ('" + data[0].Child[i].Fname + "'," +
+                                               "'" + data[0].Child[i].Mname + "'," +
+                                               "'" + data[0].Child[i].Lname + "'," +
+                                               "'" + data[0].Child[i].Age + "'," +
+                                              "'" + data[0].Child[i].NOS + "'," +
+                                              "'" + famid + "'," +
+                                             "'1'," +
+                                                 "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "')";
+                                    saving.tbl_ChildInfo_Model = db.AUIDB_WithParam(childinfo);
+                                }
+                            }
+                            sql = $@"select   NAID from tbl_Application_Model order by id desc";
 
                             DataTable tbl = db.SelectDb(sql).Tables[0];
 
-                            naid = tbl.Rows.Count== 0  ? "NA-01": tbl.Rows[0]["NAID"].ToString();
+                            naid = tbl.Rows.Count == 0 ? "NA-01" : tbl.Rows[0]["NAID"].ToString();
                             //loan details
 
-                            string loandetails = $@"insert into   tbl_LoanDetails_Model
-                                ([LoanAmount]
-                               ,[TermsOfPayment]
-                               ,[Purpose]
-                               ,[MemId]
-                               ,[Status]
-                               ,[LoanTypeID]
-                               ,[NAID]
-                               ,[DateCreated])
-                                values
-                                ('" + data[0].LoanAmount + "'," +
-                                          "'" + data[0].TermsOfPayment + "'," +
-                                          "'" + data[0].Purpose + "'," +
-                                          "'" + memid + "'," +
-                                          "'1'," +
-                                          "'" + data[0].LoanTypeId + "'," +
-                                          "'" + naid + "'," +
-                                           "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
-                            saving.tbl_LoanDetails_Model = db.AUIDB_WithParam(loandetails);
+
                             string Insert_comaker = $@"insert into   [dbo].[tbl_CoMaker_Model]
                                 ([Fname]
                                ,[Mname]
@@ -2440,10 +2514,11 @@ FROM            tbl_Member_Model INNER JOIN
 
                             saving.tbl_CoMaker_Model = db.AUIDB_WithParam(Insert_comaker);
 
-                            sql = $@"select Top(1) CMID from tbl_CoMaker_Model order by id desc";
+                            sql = $@"select   CMID from tbl_CoMaker_Model order by id desc";
 
                             DataTable tables = db.SelectDb(sql).Tables[0];
-                            var cmid = tables.Rows[0]["CMID"].ToString();
+                            string cmid = tables.Rows[0]["CMID"].ToString();
+
                             string insert_jobcomaker = $@"INSERT INTO [dbo].[tbl_CoMaker_JobInfo_Model]
                                ([JobDescription]
                                ,[YOS]
@@ -2476,7 +2551,7 @@ FROM            tbl_Member_Model INNER JOIN
 
                             if (data[0].Appliances.Count != 0)
                             {
-                                sql = $@"select Top(1) NAID from tbl_Application_Model order by id desc";
+                                sql = $@"select   NAID from tbl_Application_Model order by id desc";
 
                                 DataTable na_table = db.SelectDb(sql).Tables[0];
                                 naid = tbl.Rows.Count == 0 ? "NA-01" : tbl.Rows[0]["NAID"].ToString();
@@ -2498,13 +2573,33 @@ FROM            tbl_Member_Model INNER JOIN
                                                   "'1'," +
                                                   "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "')";
 
-                                    
+
                                 }
 
                                 saving.tbl_Appliance_Model = db.AUIDB_WithParam(na_insert);
 
 
                             }
+                            string loandetails = $@"insert into   tbl_LoanDetails_Model
+                                ([LoanAmount]
+                               ,[TermsOfPayment]
+                               ,[Purpose]
+                               ,[MemId]
+                               ,[Status]
+                               ,[LoanTypeID]
+                               ,[NAID]
+                               ,[DateCreated])
+                                values
+                                ('" + data[0].LoanAmount + "'," +
+                                         "'" + data[0].TermsOfPayment + "'," +
+                                         "'" + data[0].Purpose + "'," +
+                                         "'" + memid + "'," +
+                                         "'1'," +
+                                         "'" + data[0].LoanTypeId + "'," +
+                                         "'" + naid + "'," +
+                                          "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
+                            saving.tbl_LoanDetails_Model = db.AUIDB_WithParam(loandetails);
+
                             string file_upload = $@"INSERT INTO [dbo].[tbl_fileupload_Model]
                                            ([MemId]
                                            ,[FileName]

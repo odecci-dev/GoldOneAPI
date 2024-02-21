@@ -1,8 +1,8 @@
-﻿using AuthSystem.Models;
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Text;
+using AuthSystem.Models;
 using static GoldOneAPI.Controllers.ApplicationController;
 using static GoldOneAPI.Controllers.ApprovalController;
 using static GoldOneAPI.Controllers.CollectionController;
@@ -170,7 +170,7 @@ namespace GoldOneAPI.Manager
                 item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + ", " + dr["Mname"].ToString() + ", " + dr["Suffix"].ToString();
                 item.Status = dr["Status"].ToString();
                 item.CurrentLoan = dr["LoanAmount"].ToString();
-                item.OutstandingBalance = dr["OutstandingBalance"].ToString() == "" ? "0": dr["OutstandingBalance"].ToString();
+                item.OutstandingBalance = dr["OutstandingBalance"].ToString() == "" ? "0" : dr["OutstandingBalance"].ToString();
                 item.LastUpdated = dr["DateUpdated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateUpdated"].ToString()).ToString("yyyy-MM-dd");
                 item.MemId = dr["MemId"].ToString();
                 item.Naid = dr["NAID"].ToString();
@@ -3039,7 +3039,7 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                          FROM            tbl_Application_Model INNER JOIN
                          tbl_Member_Model ON tbl_Application_Model.MemId = tbl_Member_Model.MemId INNER JOIN
                          tbl_Appliance_Model ON tbl_Application_Model.NAID = tbl_Appliance_Model.NAID
-                                        WHERE        (tbl_Member_Model.MemId = '" + dr["MemId"].ToString() + "')";
+                                        WHERE       tbl_Application_Model.NAID ='" + ApplicationId + "'";
 
                 DataTable appliances_table = db.SelectDb(sql_appliances).Tables[0];
                 var appliances_res = new List<ApplianceModel>();
@@ -3738,10 +3738,14 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                 var datec = dr["DateCreated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateCreated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
                 var item = new LoanHistoryVM();
                 item.LoanAmount = dr["LoanAmount"].ToString();
+                item.loanPrincipal = dr["LoanAmount"].ToString();
                 item.Savings = dr["Savings"].ToString();
+                item.totalSavingsAmount = dr["Savings"].ToString();
                 item.Penalty = dr["Penalty"].ToString();
                 item.OutStandingBalance = dr["OutStandingBalance"].ToString();
+                item.amountDue = dr["OutStandingBalance"].ToString();
                 item.DateReleased = datereleased;
+                item.releasingDate = datereleased;
                 item.DueDate = duedate;
                 item.DateCreated = datec;
                 item.DateOfFullPayment = dofp;
@@ -3752,6 +3756,7 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                 item.Lname = dr["Lname"].ToString();
                 item.Suffix = dr["Suffix"].ToString();
                 item.Status = dr["Status"].ToString();
+                item.NAID = dr["NAID"].ToString();
                 result.Add(item);
             }
 
@@ -4679,14 +4684,14 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
 
                 interest = double.Parse(interestrate);
                 interest_rate = Convert.ToDouble(loanprincipal) * Convert.ToDouble(interest);
-
+                advance_totalamount = formulas == "Loan Amount/Terms" ? Convert.ToDouble(loanprincipal) + interest_rate : Convert.ToDouble(loanprincipal);
                 if (TypeOfCollection == "Daily")
                 {
                     if (InterestType == "Compound")
                     {
 
 
-                        advance_totalamount = formulas == "Loan Amount/Terms" ? Convert.ToDouble(loanprincipal) + interest_rate : Convert.ToDouble(loanprincipal);
+
                         if (NotarialFeeOrigin == "2")
                         {
                             total_loan_amount = Convert.ToDouble(loanprincipal);
@@ -4759,7 +4764,7 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                             holiday = double.Parse(ctr.ToString()) * daily_collectibles;
                             total_deduction = Math.Ceiling(total_notarial + LifeInsurances + total_loaninsurance + AdvancePayment + holiday);
                             loanreceivable = Math.Ceiling((Convert.ToDouble(loanprincipal) - total_deduction));
-                            loan_bal = Math.Abs((total_loan_amount) - (AdvancePayment + holiday));
+                            loan_bal = Math.Abs((advance_totalamount) - (AdvancePayment + holiday));
                         }
                         else
                         {
@@ -4775,7 +4780,7 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                             total_deduction = Math.Ceiling(total_notarial + 0 + total_loaninsurance + AdvancePayment + holiday);
 
                             loanreceivable = Math.Ceiling((Convert.ToDouble(loanprincipal) - total_deduction));
-                            loan_bal = Math.Abs((total_loan_amount) - (AdvancePayment + holiday));
+                            loan_bal = Math.Abs((advance_totalamount) - (AdvancePayment + holiday));
                         }
 
                     }
@@ -4867,7 +4872,7 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                             //total_deduction = Math.Ceiling(total_notarial + LifeInsurances + total_loaninsurance + AdvancePayment + holiday );
 
                             loanreceivable = Math.Ceiling((Convert.ToDouble(loanprincipal) - total_deduction));
-                            loan_bal = Math.Abs((total_loan_amount) - (AdvancePayment + interest_rate + holiday));
+                            loan_bal = Math.Abs((advance_totalamount) - (AdvancePayment + interest_rate + holiday));
 
                         }
 
@@ -5036,7 +5041,7 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                         //total_deduction = Math.Ceiling(total_notarial + LifeInsurances + total_loaninsurance + AdvancePayment + holiday );
 
                         loanreceivable = Math.Ceiling((Convert.ToDouble(loanprincipal) - total_deduction));
-                        loan_bal = Math.Abs((total_loan_amount) - (AdvancePayment + interest_rate + holiday));
+                        loan_bal = Math.Abs((advance_totalamount) - (AdvancePayment + interest_rate + holiday));
                     }
 
                     amountreceived = (double.Parse(loanprincipal) + interest_rate) - total_deduction;
@@ -5047,10 +5052,12 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
             }
             else
             {
+
                 interest = double.Parse(interestrate);
                 deduct_interest = interest;
                 daily_collectibles = Math.Ceiling(advance_totalamount / Convert.ToDouble(days));
                 interest_rate = Convert.ToDouble(loanprincipal) * Convert.ToDouble(interest);
+                advance_totalamount = formulas == "Loan Amount/Terms" ? Convert.ToDouble(loanprincipal) + interest_rate : Convert.ToDouble(loanprincipal);
                 total_loan_amount = Convert.ToDouble(loanprincipal) + interest_rate;
                 double origin_amount = 0;
                 if (NotarialFeeOrigin == "2")
@@ -5112,7 +5119,7 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
 
                 loanreceivable = Math.Ceiling((Convert.ToDouble(loanprincipal) - total_deduction));
                 amountreceived = Math.Ceiling((double.Parse(loanprincipal) + interest_rate) - total_deduction);
-                loan_bal = Math.Abs((total_loan_amount) - (AdvancePayment + interest_rate + holiday));
+                loan_bal = Math.Abs((advance_totalamount) - (AdvancePayment + interest_rate + holiday));
             }
             string day_holiday = "";
             string dateholiday = "";
@@ -5192,7 +5199,7 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                 string loan_amount = dr["ApprovedLoanAmount"].ToString() == "" ? dr["LoanAmount"].ToString() : dr["ApprovedLoanAmount"].ToString();
 
                 //    dr["InterestRate"].ToString(), );
-                var computation_res = GetMultipleStrings(approved_date, dr["Days"].ToString(), dr["MemId"].ToString(), dr["InterestRate"].ToString(),loan_amount
+                var computation_res = GetMultipleStrings(approved_date, dr["Days"].ToString(), dr["MemId"].ToString(), dr["InterestRate"].ToString(), loan_amount
                                     , dr["Loan_amount_GreaterEqual_Value"].ToString(), dr["Loan_amount_GreaterEqual"].ToString(), dr["LAGEF_Type"].ToString(), dr["Loan_amount_Lessthan_Value"].ToString()
                                     , dr["Loan_amount_Lessthan"].ToString(), dr["LALV_Type"].ToString(), dr["LoanInsurance"].ToString(), dr["LoanI_Type"].ToString(), dr["Formula"].ToString(), dr["APFID"].ToString()
                                     , dr["InterestType"].ToString(), dr["OldFormula"].ToString(), dr["NoAdvancePayment"].ToString(), dr["InterestApplied"].ToString(), dr["DeductInterest"].ToString(), dr["TypeOfCollection"].ToString()
@@ -6550,7 +6557,7 @@ FROM            tbl_Application_Model INNER JOIN
             //    //DateTime currentDate = DateTime.Now;
             //    var datec = dr["DateCreated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateCreated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
 
-            
+
 
             //}
 
@@ -6778,7 +6785,7 @@ FROM            tbl_Area_Model INNER JOIN
 
                                     item.MemId = dr["MemId"].ToString();
                                     item.Cno = dr["Cno"].ToString();
-                                    item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                    item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
                                     item.NAID = dr["NAID"].ToString();
                                     item.Co_Fname = dr["Co_Fname"].ToString();
                                     item.Co_Mname = dr["Co_Mname"].ToString();
@@ -6854,7 +6861,7 @@ FROM            tbl_Area_Model INNER JOIN
 
                                         item.MemId = dr["MemId"].ToString();
                                         item.Cno = dr["Cno"].ToString();
-                                        item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                        item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
                                         item.NAID = dr["NAID"].ToString();
                                         item.Co_Fname = dr["Co_Fname"].ToString();
                                         item.Co_Mname = dr["Co_Mname"].ToString();
@@ -7023,7 +7030,7 @@ FROM            tbl_Area_Model INNER JOIN
                                             item.PastDue = interest_amount.ToString();
                                             item.MemId = dr["MemId"].ToString();
                                             item.Cno = dr["Cno"].ToString();
-                                            item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                            item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
                                             item.NAID = dr["NAID"].ToString();
                                             item.Co_Fname = dr["Co_Fname"].ToString();
                                             item.Co_Mname = dr["Co_Mname"].ToString();
@@ -7075,7 +7082,7 @@ FROM            tbl_Area_Model INNER JOIN
                                         item.PastDue = interest_amount.ToString();
                                         item.MemId = dr["MemId"].ToString();
                                         item.Cno = dr["Cno"].ToString();
-                                        item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                        item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
                                         item.NAID = dr["NAID"].ToString();
                                         item.Co_Fname = dr["Co_Fname"].ToString();
                                         item.Co_Mname = dr["Co_Mname"].ToString();
@@ -7157,7 +7164,7 @@ FROM            tbl_Area_Model INNER JOIN
                                                 item.PastDue = interest_amount.ToString();
                                                 item.MemId = dr["MemId"].ToString();
                                                 item.Cno = dr["Cno"].ToString();
-                                                item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                                item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
                                                 item.NAID = dr["NAID"].ToString();
                                                 item.Co_Fname = dr["Co_Fname"].ToString();
                                                 item.Co_Mname = dr["Co_Mname"].ToString();
@@ -7211,7 +7218,7 @@ FROM            tbl_Area_Model INNER JOIN
                                             item.PastDue = interest_amount.ToString();
                                             item.MemId = dr["MemId"].ToString();
                                             item.Cno = dr["Cno"].ToString();
-                                            item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                            item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
                                             item.NAID = dr["NAID"].ToString();
                                             item.Co_Fname = dr["Co_Fname"].ToString();
                                             item.Co_Mname = dr["Co_Mname"].ToString();
@@ -7376,7 +7383,7 @@ FROM            tbl_Area_Model INNER JOIN
                                                 item.PastDue = interest_amount.ToString();
                                                 item.MemId = dr["MemId"].ToString();
                                                 item.Cno = dr["Cno"].ToString();
-                                                item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                                item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
                                                 item.NAID = dr["NAID"].ToString();
                                                 item.Co_Fname = dr["Co_Fname"].ToString();
                                                 item.Co_Mname = dr["Co_Mname"].ToString();
@@ -7428,7 +7435,7 @@ FROM            tbl_Area_Model INNER JOIN
                                             item.PastDue = interest_amount.ToString();
                                             item.MemId = dr["MemId"].ToString();
                                             item.Cno = dr["Cno"].ToString();
-                                            item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                            item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
                                             item.NAID = dr["NAID"].ToString();
                                             item.Co_Fname = dr["Co_Fname"].ToString();
                                             item.Co_Mname = dr["Co_Mname"].ToString();
@@ -7513,7 +7520,7 @@ FROM            tbl_Area_Model INNER JOIN
                                                     item.PastDue = interest_amount.ToString();
                                                     item.MemId = dr["MemId"].ToString();
                                                     item.Cno = dr["Cno"].ToString();
-                                                    item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                                    item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
                                                     item.NAID = dr["NAID"].ToString();
                                                     item.Co_Fname = dr["Co_Fname"].ToString();
                                                     item.Co_Mname = dr["Co_Mname"].ToString();
@@ -7565,7 +7572,7 @@ FROM            tbl_Area_Model INNER JOIN
                                                 item.PastDue = interest_amount.ToString();
                                                 item.MemId = dr["MemId"].ToString();
                                                 item.Cno = dr["Cno"].ToString();
-                                                item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                                item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
                                                 item.NAID = dr["NAID"].ToString();
                                                 item.Co_Fname = dr["Co_Fname"].ToString();
                                                 item.Co_Mname = dr["Co_Mname"].ToString();
@@ -7620,7 +7627,7 @@ FROM            tbl_Area_Model INNER JOIN
 
             return result;
         }
-   
+
 
         public List<CollectionVM> getAreaLoanSummary_3()
         {
