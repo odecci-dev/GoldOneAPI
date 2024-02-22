@@ -1812,7 +1812,7 @@ FROM            tbl_Member_Model INNER JOIN
                                               "[CmpId] = '" + data[0].F_CompanyName + "', " +
                                               "[NOD] = '" + data[0].F_NOD + "', " +
                                               "[RTTB] ='" + data[0].F_RTTB + "', " +
-                                              "[MemId] ='" + data[0].MemId + "', " +
+                                              "[MemId] ='" + validate_exist.MemId + "', " +
                                               "[Status] = '1', " +
                                               "[DateUpdated]='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' " +
                                                "where MemId='" + validate_exist.MemId + "'";
@@ -1862,12 +1862,12 @@ FROM            tbl_Member_Model INNER JOIN
                             if (data[0].Business.Count != 0)
                             {
 
-                                string businessval = $@"SELECT * FROM [dbo].[tbl_BusinessInformation_Model]  where MemId='" + data[0].MemId + "'";
+                                string businessval = $@"SELECT * FROM [dbo].[tbl_BusinessInformation_Model]  where MemId='" + validate_exist.MemId + "'";
                                 DataTable businessval_tbl = db.SelectDb(businessval).Tables[0];
                                 if (businessval_tbl.Rows.Count != 0)
                                 {
 
-                                    string Delete = $@"DELETE FROM [dbo].[tbl_BusinessInformation_Model]  where MemId='" + data[0].MemId + "'";
+                                    string Delete = $@"DELETE FROM [dbo].[tbl_BusinessInformation_Model]  where MemId='" + validate_exist.MemId + "'";
                                     db.AUIDB_WithParam(Delete);
                                 }
 
@@ -1911,7 +1911,7 @@ FROM            tbl_Member_Model INNER JOIN
                                                           "'" + data[0].Business[i].VOS + "'," +
                                                           "'" + data[0].Business[i].AOS + "'," +
                                                           "'1'," +
-                                                          "'" + data[0].MemId + "'," +
+                                                          "'" + validate_exist.MemId + "'," +
                                                           "'" + data[0].Business[0].BusinessFiles[i].FilePath + "'," +
                                                            "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
                                     saving.tbl_BusinessInformation_Model = db.AUIDB_WithParam(b_insert);
