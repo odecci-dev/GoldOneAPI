@@ -170,7 +170,7 @@ namespace GoldOneAPI.Controllers
             int total = 0;
             int total_count = 0;
             int daysLeft = new DateTime(DateTime.Now.Year, 12, 31).DayOfYear - DateTime.Now.DayOfYear;
-            int day = days == 1 ? 334 : days;
+            int day = days == 0 ? 334 : days;
             string datecreated = "";
             int count_ = 0;
             var result = new List<ActiveMember>();
@@ -189,86 +189,102 @@ namespace GoldOneAPI.Controllers
             {
                 if (days == 0 && category == null)
                 {
-
-                    string query = "";
-                    string areafilter = $@"SELECT  tbl_Area_Model.Id, tbl_Area_Model.Area,tbl_Area_Model.City from tbl_Area_Model where Status=1";
-                    DataTable area_table = db.SelectDb(areafilter).Tables[0];
-                    var item = new ActiveMember();
-                    foreach (DataRow dr_area in area_table.Rows)
+                    for (int i = 0; i < list.Count; i++)
                     {
-                       
-
-                        var area_city = dr_area["City"].ToString().ToLower().Split("|").ToList();
-                        for (int x = 0; x < area_city.Count; x++)
-                        {
-                            var spliter = area_city[x].Split(",");
-                            string barangay = spliter[0];
-                            string city = spliter[1];
-
-                            string sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1 and DATENAME(month,DateCreated) = '" + list[0].label + "' and  tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'    group by   DATENAME(month,DateCreated)   ";
-                            DataTable dt1 = db.SelectDb(sql1).Tables[0];
-                            query += sql1;
-
-                            if (dt1.Rows.Count != 0)
-                            {
-                                datecreated = dt1.Rows[0]["month"].ToString();
-                                total_count = int.Parse(dt1.Rows[0]["count"].ToString());
-                            }
+                        string query = "";
 
 
-                        }
-
-                        count_ += total_count;
-                    
-
-
-                    }
-                 
-                    item.AreaName = "ALL AREAS";
-                    item.count = count_;
-                    item.Date = datecreated;
-                    result.Add(item);
-
-                }
-                else if (days == 0 && category != null)
-                {
-                    string query = "";
-                    string areafilter = $@"SELECT  tbl_Area_Model.Id, tbl_Area_Model.Area,tbl_Area_Model.City from tbl_Area_Model where Status=1";
-                    DataTable area_table = db.SelectDb(areafilter).Tables[0];
-                    foreach (DataRow dr_area in area_table.Rows)
-                    {
                         var item = new ActiveMember();
-                        var area_city = dr_area["City"].ToString().ToLower().Split("|").ToList();
-                        for (int x = 0; x < area_city.Count; x++)
+                        string sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1   and DATENAME(month,DateCreated) = '" + list[i].label + "'  group by   DATENAME(month,DateCreated)   ";
+                        //string sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1 and DATENAME(month,DateCreated) = '" + list[i].label + "' and  tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'    group by   DATENAME(month,DateCreated)   ";
+                        DataTable dt1 = db.SelectDb(sql1).Tables[0];
+                        query += sql1;
+
+                        if (dt1.Rows.Count != 0)
                         {
-                            var spliter = area_city[x].Split(",");
-                            string barangay = spliter[0];
-                            string city = spliter[1];
-                        
-                               string sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1 and DATENAME(month,DateCreated) = '" + list[0].label + "' and  tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'    group by   DATENAME(month,DateCreated)   ";
-                                DataTable dt1 = db.SelectDb(sql1).Tables[0];
-                            query += sql1;
+                            datecreated = dt1.Rows[0]["month"].ToString();
+                            total_count = int.Parse(dt1.Rows[0]["count"].ToString());
 
-                                if (dt1.Rows.Count != 0)
-                                {
-                                datecreated = dt1.Rows[0]["month"].ToString();
-                                total_count = int.Parse(dt1.Rows[0]["count"].ToString());
-                                }
+                        }
+                        else
+                        {
 
-                  
+                            datecreated = list[i].label;
+                            total_count = 0;
                         }
 
-                        count_ += total_count;
+
+
+                        item.AreaName = "ALL AREAS";
                         item.count = total_count;
-                        item.AreaName = dr_area["Area"].ToString();
-                     
                         item.Date = datecreated;
                         result.Add(item);
 
 
-                    }
 
-               }
+
+                    }
+                }
+                else if (category != null)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        string query = "";
+                        string areafilter = $@"SELECT  tbl_Area_Model.Id, tbl_Area_Model.Area,tbl_Area_Model.City from tbl_Area_Model where Status=1 and Area='"+category+"'";
+                        DataTable area_table = db.SelectDb(areafilter).Tables[0];
+                        foreach (DataRow dr_area in area_table.Rows)
+                        {
+                            var item = new ActiveMember();
+                            var area_city = dr_area["City"].ToString().ToLower().Split("|").ToList();
+                            for (int x = 0; x < area_city.Count; x++)
+                            {
+                                var spliter = area_city[x].Split(",");
+                                string barangay = spliter[0];
+                                string city = spliter[1];
+
+                                string sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1 and DATENAME(month,DateCreated) = '" + list[i].label + "' and  tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'    group by   DATENAME(month,DateCreated)   ";
+                                DataTable dt1 = db.SelectDb(sql1).Tables[0];
+                                query += sql1;
+
+                                if (dt1.Rows.Count != 0)
+                                {
+                                    datecreated = dt1.Rows[0]["month"].ToString();
+                                    total_count = int.Parse(dt1.Rows[0]["count"].ToString());
+                                }
+
+
+                            }
+                            string sql = $@"SELECT count(*) as count
+                         FROM  tbl_Member_Model
+                         WHERE DateCreated >= DATEADD(day,-" + day + ", GETDATE()) and status= 1";
+                            DataTable dt = db.SelectDb(sql).Tables[0];
+
+                            if (dt.Rows.Count > 0)
+                            {
+                                foreach (DataRow dr in dt.Rows)
+                                {
+                                    count_ += total_count;
+                                    item.count = total_count;
+                                    item.AreaName = dr_area["Area"].ToString();
+
+                                    item.Date = datecreated;
+                                    result.Add(item);
+
+                                }
+
+
+                            }
+                            else
+                            {
+                                return BadRequest("ERROR");
+                            }
+
+
+
+                        }
+
+                    }
+                }
             }
 
             catch (Exception ex)

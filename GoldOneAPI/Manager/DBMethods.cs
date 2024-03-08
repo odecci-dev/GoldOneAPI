@@ -505,7 +505,7 @@ FROM            tbl_Area_Model INNER JOIN
                 tbl_Application_Model left join 
                 tbl_LoanDetails_Model on tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID left join 
                 tbl_Member_Model on tbl_LoanDetails_Model.MemId  = tbl_Member_Model.MemId left join 
-                tbl_LoanHistory_Model on tbl_LoanDetails_Model.MemId = tbl_LoanHistory_Model.MemId left JOIN 
+               tbl_LoanHistory_Model on tbl_LoanDetails_Model.NAID= tbl_LoanHistory_Model.NAID left JOIN 
                 tbl_Collection_AreaMember_Model on tbl_Collection_AreaMember_Model.NAID = tbl_Application_Model.NAID left join 
                 tbl_CoMaker_Model on tbl_CoMaker_Model.MemId = tbl_Member_Model.MemId left JOIN
                 tbl_MemberSavings_Model on tbl_Member_Model.MemId = tbl_MemberSavings_Model.MemId left JOIN
@@ -521,8 +521,13 @@ FROM            tbl_Area_Model INNER JOIN
                     {
                         if (tbl_application_details.Rows[0]["TypeOfCollection"].ToString() == "Daily")
                         {
+                    
                             foreach (DataRow dr in tbl_application_details.Rows)
                             {
+                                if (double.Parse(dr["AmountDue"].ToString()) != 0)
+                                {
+
+                               
                                 var item = new CollectionVM();
                                 item.Borrower = dr["Fname"].ToString() + ", " + dr["Mname"].ToString() + ", " + dr["Lname"].ToString() + ", " + dr["Suffix"].ToString();
                                 item.DailyCollectibles = dr["DailyCollectibles"].ToString();
@@ -543,7 +548,7 @@ FROM            tbl_Area_Model INNER JOIN
                             }
                             items.Collection = collection_list;
                             res.Add(items);
-
+                            }
                         }
                         else
                         {
@@ -557,27 +562,29 @@ FROM            tbl_Area_Model INNER JOIN
                             {
                                 foreach (DataRow dr in tbl_application_details.Rows)
                                 {
-                                    var item = new CollectionVM();
-                                    item.Borrower = dr["Fname"].ToString() + ", " + dr["Mname"].ToString() + ", " + dr["Lname"].ToString() + ", " + dr["Suffix"].ToString();
-                                    item.DailyCollectibles = dr["DailyCollectibles"].ToString();
-                                    item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
-                                    item.LapsePayment = dr["LapsePayment"].ToString();
-                                    item.AdvancePayment = dr["AdvancePayment"].ToString();
-                                    item.Payment_Method = dr["Payment_Method"].ToString();
-                                    item.Payment_Status = dr["Payment_Status"].ToString();
-                                    item.MemId = dr["MemId"].ToString();
-                                    item.NAID = dr["NAID"].ToString();
-                                    item.Payment_Status_Id = dr["Payment_Status_Id"].ToString();
-                                    item.AreaID = dr_area["AreaID"].ToString();
-                                    item.Area_RefNo = Area_RefNo;
-                                    item.CollectedAmount = dr["CollectedAmount"].ToString();
+                                    if (double.Parse(dr["AmountDue"].ToString()) != 0)
+                                    {
+                                        var item = new CollectionVM();
+                                        item.Borrower = dr["Fname"].ToString() + ", " + dr["Mname"].ToString() + ", " + dr["Lname"].ToString() + ", " + dr["Suffix"].ToString();
+                                        item.DailyCollectibles = dr["DailyCollectibles"].ToString();
+                                        item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
+                                        item.LapsePayment = dr["LapsePayment"].ToString();
+                                        item.AdvancePayment = dr["AdvancePayment"].ToString();
+                                        item.Payment_Method = dr["Payment_Method"].ToString();
+                                        item.Payment_Status = dr["Payment_Status"].ToString();
+                                        item.MemId = dr["MemId"].ToString();
+                                        item.NAID = dr["NAID"].ToString();
+                                        item.Payment_Status_Id = dr["Payment_Status_Id"].ToString();
+                                        item.AreaID = dr_area["AreaID"].ToString();
+                                        item.Area_RefNo = Area_RefNo;
+                                        item.CollectedAmount = dr["CollectedAmount"].ToString();
 
 
-                                    collection_list.Add(item);
+                                        collection_list.Add(item);
+                                    }
+                                    items.Collection = collection_list;
+                                    res.Add(items);
                                 }
-                                items.Collection = collection_list;
-                                res.Add(items);
-
                             }
                         }
                     }
@@ -5676,7 +5683,7 @@ FROM            tbl_Area_Model INNER JOIN
                          tbl_TermsTypeOfCollection_Model.Value, tbl_Application_Model.ReleasingDate
 FROM            tbl_TermsOfPayment_Model INNER JOIN
                          tbl_LoanDetails_Model ON tbl_TermsOfPayment_Model.TopId = tbl_LoanDetails_Model.ApprovedTermsOfPayment INNER JOIN
-                         tbl_TermsTypeOfCollection_Model ON tbl_TermsOfPayment_Model.CollectionTypeId = tbl_TermsTypeOfCollection_Model.Id RIGHT OUTER JOIN
+                         tbl_TermsTypeOfCollection_Model ON tbl_TermsOfPayment_Model.CollectionTypeId = tbl_TermsTypeOfCollection_Model.Id inner JOIN
                          tbl_CollectionModel INNER JOIN
                          tbl_CollectionArea_Model ON tbl_CollectionArea_Model.CollectionRefNo = tbl_CollectionModel.RefNo LEFT OUTER JOIN
                          tbl_Collection_AreaMember_Model ON tbl_Collection_AreaMember_Model.Area_RefNo = tbl_CollectionArea_Model.Area_RefNo LEFT OUTER JOIN
@@ -5684,89 +5691,30 @@ FROM            tbl_TermsOfPayment_Model INNER JOIN
                          tbl_CollectionStatus_Model AS pay_stats ON tbl_Collection_AreaMember_Model.Payment_Status = pay_stats.Id LEFT OUTER JOIN
                          tbl_CollectionStatus_Model AS col_stats ON tbl_CollectionArea_Model.Collection_Status = col_stats.Id LEFT OUTER JOIN
                          tbl_Application_Model ON tbl_Application_Model.NAID = tbl_Collection_AreaMember_Model.NAID LEFT OUTER JOIN
-                         tbl_LoanHistory_Model ON tbl_LoanHistory_Model.MemId = tbl_Application_Model.MemId ON tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID
+                        tbl_LoanHistory_Model ON tbl_LoanHistory_Model.NAID = tbl_Application_Model.NAID ON tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID
                             where tbl_CollectionArea_Model.AreaId = '" + dr_area["AreaID"].ToString() + "' and tbl_Application_Model.Status = 14 ";
                 DataTable table_ = db.SelectDb(sql_count).Tables[0];
                 if (table_.Rows.Count != 0)
                 {
+                    if (table_.Rows.Count == 100)
+                    {
 
+                    }
                     foreach (DataRow dr in table_.Rows)
                     {
                         string date_2 = dr["DateCollected"].ToString() == "" ? dr["ReleasingDate"].ToString() : dr["DateCollected"].ToString();
                         if (dr["TypeOfCollection"].ToString() == "Daily")
                         {
-                            var item = new CollectionPrintedVM();
-                            item.RefNo = dr["RefNo"].ToString();
-                            item.DateCreated = dr["DateCreated"].ToString();
-                            item.Area_RefNo = dr["Area_RefNo"].ToString();
-                            item.AreaID = dr["AreaId"].ToString();
-                            item.AreaName = dr_area["Area"].ToString();
-                            item.FOID = dr_area["FOID"].ToString();
-                            item.DateCollected = date_2;
-                            item.FieldOfficer = dr_area["Fname"].ToString() + ", " + dr_area["Mname"].ToString() + ", " + dr_area["Lname"].ToString();
-                            item.Denomination = dr["Denomination"].ToString();
-                            item.FieldExpenses = dr["FieldExpenses"].ToString() == "" ? "0" : dr["FieldExpenses"].ToString();
-                            item.Remarks = dr["Remarks"].ToString();
-                            item.NAID = dr["NAID"].ToString();
-                            item.AdvancePayment = dr["AdvancePayment"].ToString() == "" ? "0" : dr["AdvancePayment"].ToString();
-                            item.LapsePayment = dr["LapsePayment"].ToString() == "" ? "0" : dr["LapsePayment"].ToString();
-                            item.CollectedAmount = dr["CollectedAmount"].ToString() == "" ? "0" : dr["CollectedAmount"].ToString();
-                            item.Savings = dr["Savings"].ToString() == "" ? "0" : dr["Savings"].ToString();
-                            item.PrintedStatus = dr["PrintedStatus"].ToString();
-                            item.AdvanceStatus = dr["AdvanceStatus"].ToString();
-                            item.Collection_Status = dr["Collection_Status"].ToString();
-                            item.Payment_Status = dr["Payment_Status"].ToString();
-                            item.Payment_Method = dr["Payment_Method"].ToString();
-                            item.MemId = dr["MemId"].ToString();
-                            item.OutstandingBalance = dr["OutstandingBalance"].ToString();
-                            item.Penalty = dr["Penalty"].ToString();
-                            item.DateReleased = dr["DateReleased"].ToString();
-                            item.DueDate = dr["DueDate"].ToString();
-                            item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
-                            item.UsedSavings = dr["UsedSavings"].ToString() == "" ? "0" : dr["UsedSavings"].ToString();
-                            item.ApprovedTermsOfPayment = dr["ApprovedTermsOfPayment"].ToString() == "" ? "0" : dr["ApprovedTermsOfPayment"].ToString();
-                            item.ApprovedLoanAmount = dr["ApprovedLoanAmount"].ToString() == "" ? "0" : dr["ApprovedLoanAmount"].ToString();
-                            item.ApprovedNotarialFee = dr["ApprovedNotarialFee"].ToString() == "" ? "0" : dr["ApprovedNotarialFee"].ToString();
-                            item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString() == "" ? "0" : dr["ApprovedAdvancePayment"].ToString();
-                            item.ApprovedReleasingAmount = dr["ApprovedReleasingAmount"].ToString() == "" ? "0" : dr["ApprovedReleasingAmount"].ToString();
-                            item.ApproveedInterest = dr["ApproveedInterest"].ToString() == "" ? "0" : dr["ApproveedInterest"].ToString();
-                            item.ApprovedDailyAmountDue = dr["ApprovedDailyAmountDue"].ToString() == "" ? "0" : dr["ApprovedDailyAmountDue"].ToString();
-                            item.ModeOfRelease = dr["ModeOfRelease"].ToString();
-                            item.LoanTypeID = dr["LoanTypeID"].ToString();
-                            string sql_count1 = $@"
-                                        select 
-                                        tbl_Member_Model.MemId,
-                                        tbl_Area_Model.AreaID
-                                        from
-                                        tbl_Application_Model inner join
-                                        tbl_Member_Model on tbl_Application_Model.MemId = tbl_Member_Model.MemId left join
-                                        tbl_LoanDetails_Model on tbl_Application_Model.NAID = tbl_LoanDetails_Model.NAID inner join
-                                        tbl_Area_Model on tbl_Area_Model.City LIKE '%' + tbl_Member_Model.Barangay + '%' and tbl_Area_Model.FOID is not null left join
-                                        tbl_LoanHistory_Model on tbl_LoanHistory_Model.MemId = tbl_Application_Model.MemId inner join
-                                        tbl_FieldOfficer_Model on tbl_FieldOfficer_Model.FOID = tbl_Area_Model.FOID
-                                    where tbl_Application_Model.Status =14 and tbl_Area_Model.AreaID='" + dr["AreaId"].ToString() + "'";
-                            DataTable table1_ = db.SelectDb(sql_count1).Tables[0];
-                            item.TotalItems = table1_.Rows.Count.ToString();
-                            result.Add(item);
-                        }
-                        else
-                        {
-                            int day_val = int.Parse(dr["Value"].ToString());
-                            DateTime date1 = Convert.ToDateTime(currentDate.ToString());
-                            DateTime date2 = Convert.ToDateTime(date_2).AddDays(day_val);
-                            TimeSpan difference = date2 - date1;
-                            int dayDifference = difference.Days;
-                            if (dayDifference == 0)
+                            if (double.Parse(dr["OutstandingBalance"].ToString()) != 0)
                             {
-
                                 var item = new CollectionPrintedVM();
                                 item.RefNo = dr["RefNo"].ToString();
-                                item.DateCollected = date_2;
                                 item.DateCreated = dr["DateCreated"].ToString();
                                 item.Area_RefNo = dr["Area_RefNo"].ToString();
                                 item.AreaID = dr["AreaId"].ToString();
                                 item.AreaName = dr_area["Area"].ToString();
                                 item.FOID = dr_area["FOID"].ToString();
+                                item.DateCollected = date_2;
                                 item.FieldOfficer = dr_area["Fname"].ToString() + ", " + dr_area["Mname"].ToString() + ", " + dr_area["Lname"].ToString();
                                 item.Denomination = dr["Denomination"].ToString();
                                 item.FieldExpenses = dr["FieldExpenses"].ToString() == "" ? "0" : dr["FieldExpenses"].ToString();
@@ -5782,8 +5730,8 @@ FROM            tbl_TermsOfPayment_Model INNER JOIN
                                 item.Payment_Status = dr["Payment_Status"].ToString();
                                 item.Payment_Method = dr["Payment_Method"].ToString();
                                 item.MemId = dr["MemId"].ToString();
-                                item.OutstandingBalance = dr["OutstandingBalance"].ToString();
-                                item.Penalty = dr["Penalty"].ToString();
+                                item.OutstandingBalance = dr["OutstandingBalance"].ToString() == "" ? "0" : dr["OutstandingBalance"].ToString();
+                                item.Penalty = dr["Penalty"].ToString() == "" ? "0" : dr["Penalty"].ToString(); ;
                                 item.DateReleased = dr["DateReleased"].ToString();
                                 item.DueDate = dr["DueDate"].ToString();
                                 item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
@@ -5806,15 +5754,82 @@ FROM            tbl_TermsOfPayment_Model INNER JOIN
                                         tbl_Member_Model on tbl_Application_Model.MemId = tbl_Member_Model.MemId left join
                                         tbl_LoanDetails_Model on tbl_Application_Model.NAID = tbl_LoanDetails_Model.NAID inner join
                                         tbl_Area_Model on tbl_Area_Model.City LIKE '%' + tbl_Member_Model.Barangay + '%' and tbl_Area_Model.FOID is not null left join
-                                        tbl_LoanHistory_Model on tbl_LoanHistory_Model.MemId = tbl_Application_Model.MemId inner join
+                                        tbl_LoanHistory_Model on tbl_LoanHistory_Model.NAID = tbl_Application_Model.NAID inner join
                                         tbl_FieldOfficer_Model on tbl_FieldOfficer_Model.FOID = tbl_Area_Model.FOID
                                     where tbl_Application_Model.Status =14 and tbl_Area_Model.AreaID='" + dr["AreaId"].ToString() + "'";
                                 DataTable table1_ = db.SelectDb(sql_count1).Tables[0];
                                 item.TotalItems = table1_.Rows.Count.ToString();
                                 result.Add(item);
+                            }
+                        }
+                        else
+                        {
+                            int day_val = int.Parse(dr["Value"].ToString());
+                            DateTime date1 = Convert.ToDateTime(currentDate.ToString());
+                            DateTime date2 = Convert.ToDateTime(date_2).AddDays(day_val);
+                            TimeSpan difference = date2 - date1;
+                            int dayDifference = difference.Days;
+                            if (dayDifference == 0)
+                            {
+                                if (double.Parse(dr["OutstandingBalance"].ToString()) != 0)
+                                {
+                                    var item = new CollectionPrintedVM();
+                                    item.RefNo = dr["RefNo"].ToString();
+                                    item.DateCollected = date_2;
+                                    item.DateCreated = dr["DateCreated"].ToString();
+                                    item.Area_RefNo = dr["Area_RefNo"].ToString();
+                                    item.AreaID = dr["AreaId"].ToString();
+                                    item.AreaName = dr_area["Area"].ToString();
+                                    item.FOID = dr_area["FOID"].ToString();
+                                    item.FieldOfficer = dr_area["Fname"].ToString() + ", " + dr_area["Mname"].ToString() + ", " + dr_area["Lname"].ToString();
+                                    item.Denomination = dr["Denomination"].ToString();
+                                    item.FieldExpenses = dr["FieldExpenses"].ToString() == "" ? "0" : dr["FieldExpenses"].ToString();
+                                    item.Remarks = dr["Remarks"].ToString();
+                                    item.NAID = dr["NAID"].ToString();
+                                    item.AdvancePayment = dr["AdvancePayment"].ToString() == "" ? "0" : dr["AdvancePayment"].ToString();
+                                    item.LapsePayment = dr["LapsePayment"].ToString() == "" ? "0" : dr["LapsePayment"].ToString();
+                                    item.CollectedAmount = dr["CollectedAmount"].ToString() == "" ? "0" : dr["CollectedAmount"].ToString();
+                                    item.Savings = dr["Savings"].ToString() == "" ? "0" : dr["Savings"].ToString();
+                                    item.PrintedStatus = dr["PrintedStatus"].ToString();
+                                    item.AdvanceStatus = dr["AdvanceStatus"].ToString();
+                                    item.Collection_Status = dr["Collection_Status"].ToString();
+                                    item.Payment_Status = dr["Payment_Status"].ToString();
+                                    item.Payment_Method = dr["Payment_Method"].ToString();
+                                    item.MemId = dr["MemId"].ToString();
+                                    item.OutstandingBalance = dr["OutstandingBalance"].ToString() == "" ? "0" : dr["OutstandingBalance"].ToString(); ;
+                                    item.Penalty = dr["Penalty"].ToString() == "" ? "0" : dr["OutstandingBalance"].ToString();
+                                    item.DateReleased = dr["DateReleased"].ToString();
+                                    item.DueDate = dr["DueDate"].ToString();
+                                    item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
+                                    item.UsedSavings = dr["UsedSavings"].ToString() == "" ? "0" : dr["UsedSavings"].ToString();
+                                    item.ApprovedTermsOfPayment = dr["ApprovedTermsOfPayment"].ToString() == "" ? "0" : dr["ApprovedTermsOfPayment"].ToString();
+                                    item.ApprovedLoanAmount = dr["ApprovedLoanAmount"].ToString() == "" ? "0" : dr["ApprovedLoanAmount"].ToString();
+                                    item.ApprovedNotarialFee = dr["ApprovedNotarialFee"].ToString() == "" ? "0" : dr["ApprovedNotarialFee"].ToString();
+                                    item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString() == "" ? "0" : dr["ApprovedAdvancePayment"].ToString();
+                                    item.ApprovedReleasingAmount = dr["ApprovedReleasingAmount"].ToString() == "" ? "0" : dr["ApprovedReleasingAmount"].ToString();
+                                    item.ApproveedInterest = dr["ApproveedInterest"].ToString() == "" ? "0" : dr["ApproveedInterest"].ToString();
+                                    item.ApprovedDailyAmountDue = dr["ApprovedDailyAmountDue"].ToString() == "" ? "0" : dr["ApprovedDailyAmountDue"].ToString();
+                                    item.ModeOfRelease = dr["ModeOfRelease"].ToString();
+                                    item.LoanTypeID = dr["LoanTypeID"].ToString();
+                                    string sql_count1 = $@"
+                                        select 
+                                        tbl_Member_Model.MemId,
+                                        tbl_Area_Model.AreaID
+                                        from
+                                        tbl_Application_Model inner join
+                                        tbl_Member_Model on tbl_Application_Model.MemId = tbl_Member_Model.MemId left join
+                                        tbl_LoanDetails_Model on tbl_Application_Model.NAID = tbl_LoanDetails_Model.NAID inner join
+                                        tbl_Area_Model on tbl_Area_Model.City LIKE '%' + tbl_Member_Model.Barangay + '%' and tbl_Area_Model.FOID is not null left join
+                                        tbl_LoanHistory_Model on tbl_LoanHistory_Model.NAID = tbl_Application_Model.NAID inner join
+                                        tbl_FieldOfficer_Model on tbl_FieldOfficer_Model.FOID = tbl_Area_Model.FOID
+                                    where tbl_Application_Model.Status =14 and tbl_Area_Model.AreaID='" + dr["AreaId"].ToString() + "'";
+                                    DataTable table1_ = db.SelectDb(sql_count1).Tables[0];
+                                    item.TotalItems = table1_.Rows.Count.ToString();
+                                    result.Add(item);
+
+                                }
 
                             }
-
                         }
                     }
 
@@ -6743,13 +6758,13 @@ FROM            tbl_Area_Model INNER JOIN
                             tbl_Application_Model left join 
                             tbl_LoanDetails_Model on tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID left join 
                             tbl_Member_Model on tbl_LoanDetails_Model.MemId  = tbl_Member_Model.MemId left join 
-                            tbl_LoanHistory_Model on tbl_LoanDetails_Model.MemId = tbl_LoanHistory_Model.MemId left JOIN 
+                           tbl_LoanHistory_Model on tbl_LoanDetails_Model.NAID= tbl_LoanHistory_Model.NAID left JOIN 
                             tbl_CoMaker_Model on tbl_CoMaker_Model.MemId = tbl_Member_Model.MemId left JOIN
                             tbl_MemberSavings_Model on tbl_Member_Model.MemId = tbl_MemberSavings_Model.MemId left JOIN
                             tbl_TermsOfPayment_Model on tbl_LoanDetails_Model.TermsOfPayment = tbl_TermsOfPayment_Model.TopId left JOIN
                             tbl_TermsTypeOfCollection_Model on tbl_TermsTypeOfCollection_Model.Id = tbl_TermsOfPayment_Model.CollectionTypeId left JOIN
                             (select  FilePath,MemId from tbl_fileupload_Model where tbl_fileupload_Model.[Type] = 1)  as file_ on file_.MemId = tbl_Member_Model.MemId
-                            where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "' and tbl_Application_Model.Status = 14 ";
+                            where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "' and tbl_Member_Model.Status=1 and tbl_Application_Model.Status = 14 ";
                         DataTable tbl_application_details2 = db.SelectDb(sql_applicationdetails2).Tables[0];
                         if (tbl_application_details2.Rows.Count != 0)
                         {
@@ -6774,55 +6789,59 @@ FROM            tbl_Area_Model INNER JOIN
                                         total_bal = double.Parse(dr["AmountDue"].ToString());
                                         interest_amount = 0;
                                     }
-                                    var item = new CollectionVM();
-                                    item.Fname = dr["Fname"].ToString();
-                                    item.Mname = dr["Mname"].ToString();
-                                    item.Lname = dr["Lname"].ToString();
-                                    item.Suffix = dr["Suffix"].ToString();
-                                    item.Remarks = dr["Remarks"].ToString();
-                                    item.Penalty = dr["Penalty"].ToString();
-                                    item.DateCreated = datec;
+                                    if (double.Parse(dr["AmountDue"].ToString()) !=  0)
+                                    {
+                                        var item = new CollectionVM();
+                                        item.Fname = dr["Fname"].ToString();
+                                        item.Mname = dr["Mname"].ToString();
+                                        item.Lname = dr["Lname"].ToString();
+                                        item.Suffix = dr["Suffix"].ToString();
+                                        item.Remarks = dr["Remarks"].ToString();
+                                        item.Penalty = dr["Penalty"].ToString();
+                                        item.DateCreated = datec;
 
-                                    item.MemId = dr["MemId"].ToString();
-                                    item.Cno = dr["Cno"].ToString();
-                                    item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
-                                    item.NAID = dr["NAID"].ToString();
-                                    item.Co_Fname = dr["Co_Fname"].ToString();
-                                    item.Co_Mname = dr["Co_Mname"].ToString();
-                                    item.Co_Lname = dr["Co_Lname"].ToString();
-                                    item.Co_Suffix = dr["Co_Suffix"].ToString();
-                                    item.Co_Borrower = dr["Co_Fname"].ToString() + " " + dr["Co_Mname"].ToString() + " " + dr["Co_Lname"].ToString() + " " + dr["Co_Suffix"].ToString();
-                                    item.Co_Cno = dr["Co_Cno"].ToString();
-                                    item.DailyCollectibles = dr["DailyCollectibles"].ToString();
-                                    item.AmountDue = total_bal.ToString();
-                                    item.DueDate = dr["DueDate"].ToString();
-                                    item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
-                                    item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
-                                    item.ApprovedAdvancePayment = "0";
-                                    item.LoanPrincipal = dr["LoanPrincipal"].ToString();
-                                    item.ReleasingDate = dr["ReleasingDate"].ToString();
-                                    item.TypeOfCollection = dr["TypeOfCollection"].ToString();
-                                    item.CollectedAmount = "0";
-                                    item.LapsePayment = "0";
-                                    item.AdvancePayment = "0";
-                                    item.Payment_Status_Id = "0";
-                                    item.Payment_Status = "PENDING";
-                                    item.Collection_Status = "NO PAYMENT";
-                                    item.Collection_Status_Id = "0";//
-                                    item.Payment_Method = "NO PAYMENT";
-                                    item.AreaName = dr_area["Area"].ToString();
-                                    item.AreaID = dr_area["AreaID"].ToString();
-                                    item.FieldExpenses = FieldExpenses;
-                                    item.Area_RefNo = "PENDING"; ;//
-                                    item.PastDue = interest_amount.ToString();
-                                    item.Collection_RefNo = "PENDING"; ;//
-                                    item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
-                                    item.FOID = dr_area["FOID"].ToString();
-                                    item.FilePath = dr["FilePath"].ToString();
-                                    item.DateCollected = "";
-                                    item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
+                                        item.MemId = dr["MemId"].ToString();
+                                        item.Cno = dr["Cno"].ToString();
+                                        item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
+                                        item.NAID = dr["NAID"].ToString();
+                                        item.Co_Fname = dr["Co_Fname"].ToString();
+                                        item.Co_Mname = dr["Co_Mname"].ToString();
+                                        item.Co_Lname = dr["Co_Lname"].ToString();
+                                        item.Co_Suffix = dr["Co_Suffix"].ToString();
+                                        item.Co_Borrower = dr["Co_Fname"].ToString() + " " + dr["Co_Mname"].ToString() + " " + dr["Co_Lname"].ToString() + " " + dr["Co_Suffix"].ToString();
+                                        item.Co_Cno = dr["Co_Cno"].ToString();
+                                        item.DailyCollectibles = dr["DailyCollectibles"].ToString();
+                                        item.AmountDue = total_bal.ToString();
+                                        item.DueDate = dr["DueDate"].ToString();
+                                        item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
+                                        item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
+                                        item.ApprovedAdvancePayment = "0";
+                                        item.LoanPrincipal = dr["LoanPrincipal"].ToString();
+                                        item.ReleasingDate = dr["ReleasingDate"].ToString();
+                                        item.TypeOfCollection = dr["TypeOfCollection"].ToString();
+                                        item.CollectedAmount = "0";
+                                        item.LapsePayment = "0";
+                                        item.AdvancePayment = "0";
+                                        item.Payment_Status_Id = "0";
+                                        item.Payment_Status = "PENDING";
+                                        item.Collection_Status = "NO PAYMENT";
+                                        item.Collection_Status_Id = "0";//
+                                        item.Payment_Method = "NO PAYMENT";
+                                        item.AreaName = dr_area["Area"].ToString();
+                                        item.AreaID = dr_area["AreaID"].ToString();
+                                        item.FieldExpenses = FieldExpenses;
+                                        item.Area_RefNo = "PENDING"; ;//
+                                        item.PastDue = interest_amount.ToString();
+                                        item.Collection_RefNo = "PENDING"; ;//
+                                        item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
+                                        item.FOID = dr_area["FOID"].ToString();
+                                        item.FilePath = dr["FilePath"].ToString();
+                                        item.DateCollected = "";
+                                        item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
 
-                                    result.Add(item);
+                                        result.Add(item);
+                                    }
+                                   
                                 }
                                 else
                                 {
@@ -6850,56 +6869,59 @@ FROM            tbl_Area_Model INNER JOIN
                                             total_bal = double.Parse(dr["AmountDue"].ToString());
                                             interest_amount = 0;
                                         }
-                                        var item = new CollectionVM();
-                                        item.Fname = dr["Fname"].ToString();
-                                        item.Mname = dr["Mname"].ToString();
-                                        item.Lname = dr["Lname"].ToString();
-                                        item.Suffix = dr["Suffix"].ToString();
-                                        item.Remarks = dr["Remarks"].ToString();
-                                        item.Penalty = dr["Penalty"].ToString();
-                                        item.DateCreated = datec;
+                                        if (double.Parse(dr["AmountDue"].ToString()) != 0)
+                                        {
+                                            var item = new CollectionVM();
+                                            item.Fname = dr["Fname"].ToString();
+                                            item.Mname = dr["Mname"].ToString();
+                                            item.Lname = dr["Lname"].ToString();
+                                            item.Suffix = dr["Suffix"].ToString();
+                                            item.Remarks = dr["Remarks"].ToString();
+                                            item.Penalty = dr["Penalty"].ToString();
+                                            item.DateCreated = datec;
 
-                                        item.MemId = dr["MemId"].ToString();
-                                        item.Cno = dr["Cno"].ToString();
-                                        item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
-                                        item.NAID = dr["NAID"].ToString();
-                                        item.Co_Fname = dr["Co_Fname"].ToString();
-                                        item.Co_Mname = dr["Co_Mname"].ToString();
-                                        item.Co_Lname = dr["Co_Lname"].ToString();
-                                        item.Co_Suffix = dr["Co_Suffix"].ToString();
-                                        item.Co_Borrower = dr["Co_Fname"].ToString() + " " + dr["Co_Mname"].ToString() + " " + dr["Co_Lname"].ToString() + " " + dr["Co_Suffix"].ToString();
-                                        item.Co_Cno = dr["Co_Cno"].ToString();
-                                        item.DailyCollectibles = dr["DailyCollectibles"].ToString();
-                                        item.AmountDue = total_bal.ToString();
-                                        item.DueDate = dr["DueDate"].ToString();
-                                        item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
-                                        item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
-                                        item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString();
-                                        item.LoanPrincipal = dr["LoanPrincipal"].ToString();
-                                        item.ReleasingDate = dr["ReleasingDate"].ToString();
-                                        item.TypeOfCollection = dr["TypeOfCollection"].ToString();
-                                        item.CollectedAmount = "0";
-                                        item.LapsePayment = "0";
-                                        item.AdvancePayment = "0";
-                                        item.PastDue = interest_amount.ToString();
-                                        item.Payment_Status_Id = "0";
-                                        item.Payment_Status = "PENDING";
-                                        item.Collection_Status = "NO PAYMENT";
-                                        item.Collection_Status_Id = "0";//
-                                        item.Payment_Method = "NO PAYMENT";
-                                        item.AreaName = dr_area["Area"].ToString();
-                                        item.AreaID = dr_area["AreaID"].ToString();
-                                        item.FieldExpenses = FieldExpenses;
-                                        item.Area_RefNo = "PENDING"; ;//
-                                        item.Collection_RefNo = "PENDING"; ;//
-                                        item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
-                                        item.FOID = dr_area["FOID"].ToString();
-                                        item.FilePath = dr["FilePath"].ToString();
-                                        item.DateCollected = dr["DateCollected"].ToString();
-                                        item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
+                                            item.MemId = dr["MemId"].ToString();
+                                            item.Cno = dr["Cno"].ToString();
+                                            item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
+                                            item.NAID = dr["NAID"].ToString();
+                                            item.Co_Fname = dr["Co_Fname"].ToString();
+                                            item.Co_Mname = dr["Co_Mname"].ToString();
+                                            item.Co_Lname = dr["Co_Lname"].ToString();
+                                            item.Co_Suffix = dr["Co_Suffix"].ToString();
+                                            item.Co_Borrower = dr["Co_Fname"].ToString() + " " + dr["Co_Mname"].ToString() + " " + dr["Co_Lname"].ToString() + " " + dr["Co_Suffix"].ToString();
+                                            item.Co_Cno = dr["Co_Cno"].ToString();
+                                            item.DailyCollectibles = dr["DailyCollectibles"].ToString();
+                                            item.AmountDue = total_bal.ToString();
+                                            item.DueDate = dr["DueDate"].ToString();
+                                            item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
+                                            item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
+                                            item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString();
+                                            item.LoanPrincipal = dr["LoanPrincipal"].ToString();
+                                            item.ReleasingDate = dr["ReleasingDate"].ToString();
+                                            item.TypeOfCollection = dr["TypeOfCollection"].ToString();
+                                            item.CollectedAmount = "0";
+                                            item.LapsePayment = "0";
+                                            item.AdvancePayment = "0";
+                                            item.PastDue = interest_amount.ToString();
+                                            item.Payment_Status_Id = "0";
+                                            item.Payment_Status = "PENDING";
+                                            item.Collection_Status = "NO PAYMENT";
+                                            item.Collection_Status_Id = "0";//
+                                            item.Payment_Method = "NO PAYMENT";
+                                            item.AreaName = dr_area["Area"].ToString();
+                                            item.AreaID = dr_area["AreaID"].ToString();
+                                            item.FieldExpenses = FieldExpenses;
+                                            item.Area_RefNo = "PENDING"; ;//
+                                            item.Collection_RefNo = "PENDING"; ;//
+                                            item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
+                                            item.FOID = dr_area["FOID"].ToString();
+                                            item.FilePath = dr["FilePath"].ToString();
+                                            item.DateCollected = dr["DateCollected"].ToString();
+                                            item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
 
-                                        result.Add(item);
+                                            result.Add(item);
 
+                                        }
                                     }
                                 }
                             }
@@ -6979,7 +7001,7 @@ FROM            tbl_Area_Model INNER JOIN
                 tbl_Application_Model left join 
                 tbl_LoanDetails_Model on tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID left join 
                 tbl_Member_Model on tbl_LoanDetails_Model.MemId  = tbl_Member_Model.MemId left join 
-                tbl_LoanHistory_Model on tbl_LoanDetails_Model.MemId = tbl_LoanHistory_Model.MemId left JOIN 
+       tbl_LoanHistory_Model on tbl_LoanDetails_Model.NAID= tbl_LoanHistory_Model.NAID left JOIN 
                 tbl_Collection_AreaMember_Model on tbl_Collection_AreaMember_Model.NAID = tbl_Application_Model.NAID left join 
                 tbl_CoMaker_Model on tbl_CoMaker_Model.MemId = tbl_Member_Model.MemId left JOIN
                 tbl_MemberSavings_Model on tbl_Member_Model.MemId = tbl_MemberSavings_Model.MemId left JOIN
@@ -6987,7 +7009,7 @@ FROM            tbl_Area_Model INNER JOIN
                 tbl_TermsTypeOfCollection_Model on tbl_TermsTypeOfCollection_Model.Id = tbl_TermsOfPayment_Model.CollectionTypeId left JOIN
                 tbl_CollectionStatus_Model on tbl_CollectionStatus_Model.Id = tbl_Collection_AreaMember_Model.Payment_Status left join 
                 (select  FilePath,MemId from tbl_fileupload_Model where tbl_fileupload_Model.[Type] = 1)  as file_ on file_.MemId = tbl_Member_Model.MemId
-                where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "' and tbl_Application_Model.Status = 14 " + r_column + "";
+                where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "' and tbl_Member_Model.Status=1 and tbl_Application_Model.Status = 14 " + r_column + "";
                         DataTable tbl_application_details = db.SelectDb(sql_applicationdetails).Tables[0];
 
                         if (tbl_application_details.Rows.Count != 0)
@@ -7071,54 +7093,57 @@ FROM            tbl_Area_Model INNER JOIN
                                     }
                                     else
                                     {
-                                        var item = new CollectionVM();
-                                        item.Fname = dr["Fname"].ToString();
-                                        item.Mname = dr["Mname"].ToString();
-                                        item.Lname = dr["Lname"].ToString();
-                                        item.Suffix = dr["Suffix"].ToString();
-                                        item.Remarks = dr["Remarks"].ToString();
-                                        item.Penalty = dr["Penalty"].ToString();
-                                        item.DateCreated = datec;
-                                        item.PastDue = interest_amount.ToString();
-                                        item.MemId = dr["MemId"].ToString();
-                                        item.Cno = dr["Cno"].ToString();
-                                        item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
-                                        item.NAID = dr["NAID"].ToString();
-                                        item.Co_Fname = dr["Co_Fname"].ToString();
-                                        item.Co_Mname = dr["Co_Mname"].ToString();
-                                        item.Co_Lname = dr["Co_Lname"].ToString();
-                                        item.Co_Suffix = dr["Co_Suffix"].ToString();
-                                        item.Co_Borrower = dr["Co_Fname"].ToString() + " " + dr["Co_Mname"].ToString() + " " + dr["Co_Lname"].ToString() + " " + dr["Co_Suffix"].ToString();
-                                        item.Co_Cno = dr["Co_Cno"].ToString();
-                                        item.DailyCollectibles = dr["DailyCollectibles"].ToString();
-                                        item.AmountDue = total_bal.ToString();
-                                        item.DueDate = dr["DueDate"].ToString();
-                                        item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
-                                        item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
-                                        item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString();
-                                        item.LoanPrincipal = dr["LoanPrincipal"].ToString();
-                                        item.ReleasingDate = dr["ReleasingDate"].ToString();
-                                        item.TypeOfCollection = dr["TypeOfCollection"].ToString();
-                                        item.CollectedAmount = dr["CollectedAmount"].ToString();
-                                        item.LapsePayment = dr["LapsePayment"].ToString();
-                                        item.AdvancePayment = dr["AdvancePayment"].ToString() == "" ? "0" : dr["AdvancePayment"].ToString();
-                                        item.Payment_Status_Id = dr["Payment_Status_Id"].ToString();
-                                        item.Payment_Status = dr["Payment_Status"].ToString();
-                                        item.Collection_Status = Collection_Status;//
-                                        item.Collection_Status_Id = Collection_Status_Id;//
-                                        item.Payment_Method = dr["Payment_Method"].ToString();
-                                        item.AreaName = dr_area["Area"].ToString();
-                                        item.AreaID = dr_area["AreaID"].ToString();
-                                        item.FieldExpenses = FieldExpenses;
-                                        item.Area_RefNo = Area_RefNo;//
-                                        item.Collection_RefNo = Collection_RefNo;//
-                                        item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
-                                        item.FOID = dr_area["FOID"].ToString();
-                                        item.FilePath = dr["FilePath"].ToString();
-                                        item.DateCollected = dr["DateCollected"].ToString();
-                                        item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
+                                        if (double.Parse(dr["AmountDue"].ToString()) != 0)
+                                        {
+                                            var item = new CollectionVM();
+                                            item.Fname = dr["Fname"].ToString();
+                                            item.Mname = dr["Mname"].ToString();
+                                            item.Lname = dr["Lname"].ToString();
+                                            item.Suffix = dr["Suffix"].ToString();
+                                            item.Remarks = dr["Remarks"].ToString();
+                                            item.Penalty = dr["Penalty"].ToString();
+                                            item.DateCreated = datec;
+                                            item.PastDue = interest_amount.ToString();
+                                            item.MemId = dr["MemId"].ToString();
+                                            item.Cno = dr["Cno"].ToString();
+                                            item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
+                                            item.NAID = dr["NAID"].ToString();
+                                            item.Co_Fname = dr["Co_Fname"].ToString();
+                                            item.Co_Mname = dr["Co_Mname"].ToString();
+                                            item.Co_Lname = dr["Co_Lname"].ToString();
+                                            item.Co_Suffix = dr["Co_Suffix"].ToString();
+                                            item.Co_Borrower = dr["Co_Fname"].ToString() + " " + dr["Co_Mname"].ToString() + " " + dr["Co_Lname"].ToString() + " " + dr["Co_Suffix"].ToString();
+                                            item.Co_Cno = dr["Co_Cno"].ToString();
+                                            item.DailyCollectibles = dr["DailyCollectibles"].ToString();
+                                            item.AmountDue = total_bal.ToString();
+                                            item.DueDate = dr["DueDate"].ToString();
+                                            item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
+                                            item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
+                                            item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString();
+                                            item.LoanPrincipal = dr["LoanPrincipal"].ToString();
+                                            item.ReleasingDate = dr["ReleasingDate"].ToString();
+                                            item.TypeOfCollection = dr["TypeOfCollection"].ToString();
+                                            item.CollectedAmount = dr["CollectedAmount"].ToString();
+                                            item.LapsePayment = dr["LapsePayment"].ToString();
+                                            item.AdvancePayment = dr["AdvancePayment"].ToString() == "" ? "0" : dr["AdvancePayment"].ToString();
+                                            item.Payment_Status_Id = dr["Payment_Status_Id"].ToString();
+                                            item.Payment_Status = dr["Payment_Status"].ToString();
+                                            item.Collection_Status = Collection_Status;//
+                                            item.Collection_Status_Id = Collection_Status_Id;//
+                                            item.Payment_Method = dr["Payment_Method"].ToString();
+                                            item.AreaName = dr_area["Area"].ToString();
+                                            item.AreaID = dr_area["AreaID"].ToString();
+                                            item.FieldExpenses = FieldExpenses;
+                                            item.Area_RefNo = Area_RefNo;//
+                                            item.Collection_RefNo = Collection_RefNo;//
+                                            item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
+                                            item.FOID = dr_area["FOID"].ToString();
+                                            item.FilePath = dr["FilePath"].ToString();
+                                            item.DateCollected = dr["DateCollected"].ToString();
+                                            item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
 
-                                        result.Add(item);
+                                            result.Add(item);
+                                        }
                                     }
                                 }
                                 else
@@ -7207,54 +7232,57 @@ FROM            tbl_Area_Model INNER JOIN
                                         }
                                         else
                                         {
-                                            var item = new CollectionVM();
-                                            item.Fname = dr["Fname"].ToString();
-                                            item.Mname = dr["Mname"].ToString();
-                                            item.Lname = dr["Lname"].ToString();
-                                            item.Suffix = dr["Suffix"].ToString();
-                                            item.Remarks = dr["Remarks"].ToString();
-                                            item.Penalty = dr["Penalty"].ToString();
-                                            item.DateCreated = datec;
-                                            item.PastDue = interest_amount.ToString();
-                                            item.MemId = dr["MemId"].ToString();
-                                            item.Cno = dr["Cno"].ToString();
-                                            item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
-                                            item.NAID = dr["NAID"].ToString();
-                                            item.Co_Fname = dr["Co_Fname"].ToString();
-                                            item.Co_Mname = dr["Co_Mname"].ToString();
-                                            item.Co_Lname = dr["Co_Lname"].ToString();
-                                            item.Co_Suffix = dr["Co_Suffix"].ToString();
-                                            item.Co_Borrower = dr["Co_Fname"].ToString() + " " + dr["Co_Mname"].ToString() + " " + dr["Co_Lname"].ToString() + " " + dr["Co_Suffix"].ToString();
-                                            item.Co_Cno = dr["Co_Cno"].ToString();
-                                            item.DailyCollectibles = dr["DailyCollectibles"].ToString();
-                                            item.AmountDue = total_bal.ToString();
-                                            item.DueDate = dr["DueDate"].ToString();
-                                            item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
-                                            item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
-                                            item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString();
-                                            item.LoanPrincipal = dr["LoanPrincipal"].ToString();
-                                            item.ReleasingDate = dr["ReleasingDate"].ToString();
-                                            item.TypeOfCollection = dr["TypeOfCollection"].ToString();
-                                            item.CollectedAmount = dr["CollectedAmount"].ToString();
-                                            item.LapsePayment = dr["LapsePayment"].ToString();
-                                            item.AdvancePayment = dr["AdvancePayment"].ToString() == "" ? "0" : dr["AdvancePayment"].ToString();
-                                            item.Payment_Status_Id = dr["Payment_Status_Id"].ToString();
-                                            item.Payment_Status = dr["Payment_Status"].ToString();
-                                            item.Collection_Status = Collection_Status;//
-                                            item.Collection_Status_Id = Collection_Status_Id;//
-                                            item.Payment_Method = dr["Payment_Method"].ToString();
-                                            item.AreaName = dr_area["Area"].ToString();
-                                            item.AreaID = dr_area["AreaID"].ToString();
-                                            item.FieldExpenses = FieldExpenses;
-                                            item.Area_RefNo = Area_RefNo;//
-                                            item.Collection_RefNo = Collection_RefNo;//
-                                            item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
-                                            item.FOID = dr_area["FOID"].ToString();
-                                            item.FilePath = dr["FilePath"].ToString();
-                                            item.DateCollected = dr["DateCollected"].ToString();
-                                            item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
+                                            if (double.Parse(dr["AmountDue"].ToString()) != 0)
+                                            {
+                                                var item = new CollectionVM();
+                                                item.Fname = dr["Fname"].ToString();
+                                                item.Mname = dr["Mname"].ToString();
+                                                item.Lname = dr["Lname"].ToString();
+                                                item.Suffix = dr["Suffix"].ToString();
+                                                item.Remarks = dr["Remarks"].ToString();
+                                                item.Penalty = dr["Penalty"].ToString();
+                                                item.DateCreated = datec;
+                                                item.PastDue = interest_amount.ToString();
+                                                item.MemId = dr["MemId"].ToString();
+                                                item.Cno = dr["Cno"].ToString();
+                                                item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
+                                                item.NAID = dr["NAID"].ToString();
+                                                item.Co_Fname = dr["Co_Fname"].ToString();
+                                                item.Co_Mname = dr["Co_Mname"].ToString();
+                                                item.Co_Lname = dr["Co_Lname"].ToString();
+                                                item.Co_Suffix = dr["Co_Suffix"].ToString();
+                                                item.Co_Borrower = dr["Co_Fname"].ToString() + " " + dr["Co_Mname"].ToString() + " " + dr["Co_Lname"].ToString() + " " + dr["Co_Suffix"].ToString();
+                                                item.Co_Cno = dr["Co_Cno"].ToString();
+                                                item.DailyCollectibles = dr["DailyCollectibles"].ToString();
+                                                item.AmountDue = total_bal.ToString();
+                                                item.DueDate = dr["DueDate"].ToString();
+                                                item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
+                                                item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
+                                                item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString();
+                                                item.LoanPrincipal = dr["LoanPrincipal"].ToString();
+                                                item.ReleasingDate = dr["ReleasingDate"].ToString();
+                                                item.TypeOfCollection = dr["TypeOfCollection"].ToString();
+                                                item.CollectedAmount = dr["CollectedAmount"].ToString();
+                                                item.LapsePayment = dr["LapsePayment"].ToString();
+                                                item.AdvancePayment = dr["AdvancePayment"].ToString() == "" ? "0" : dr["AdvancePayment"].ToString();
+                                                item.Payment_Status_Id = dr["Payment_Status_Id"].ToString();
+                                                item.Payment_Status = dr["Payment_Status"].ToString();
+                                                item.Collection_Status = Collection_Status;//
+                                                item.Collection_Status_Id = Collection_Status_Id;//
+                                                item.Payment_Method = dr["Payment_Method"].ToString();
+                                                item.AreaName = dr_area["Area"].ToString();
+                                                item.AreaID = dr_area["AreaID"].ToString();
+                                                item.FieldExpenses = FieldExpenses;
+                                                item.Area_RefNo = Area_RefNo;//
+                                                item.Collection_RefNo = Collection_RefNo;//
+                                                item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
+                                                item.FOID = dr_area["FOID"].ToString();
+                                                item.FilePath = dr["FilePath"].ToString();
+                                                item.DateCollected = dr["DateCollected"].ToString();
+                                                item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
 
-                                            result.Add(item);
+                                                result.Add(item);
+                                            }
                                         }
                                     }
                                 }
@@ -7334,7 +7362,7 @@ FROM            tbl_Area_Model INNER JOIN
                 tbl_Application_Model left join 
                 tbl_LoanDetails_Model on tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID left join 
                 tbl_Member_Model on tbl_LoanDetails_Model.MemId  = tbl_Member_Model.MemId left join 
-                tbl_LoanHistory_Model on tbl_LoanDetails_Model.MemId = tbl_LoanHistory_Model.MemId left JOIN 
+          tbl_LoanHistory_Model on tbl_LoanDetails_Model.NAID= tbl_LoanHistory_Model.NAID left JOIN 
                 tbl_Collection_AreaMember_Model on tbl_Collection_AreaMember_Model.NAID = tbl_Application_Model.NAID left join 
                 tbl_CoMaker_Model on tbl_CoMaker_Model.MemId = tbl_Member_Model.MemId left JOIN
                 tbl_MemberSavings_Model on tbl_Member_Model.MemId = tbl_MemberSavings_Model.MemId left JOIN
@@ -7342,7 +7370,7 @@ FROM            tbl_Area_Model INNER JOIN
                 tbl_TermsTypeOfCollection_Model on tbl_TermsTypeOfCollection_Model.Id = tbl_TermsOfPayment_Model.CollectionTypeId left JOIN
                 tbl_CollectionStatus_Model on tbl_CollectionStatus_Model.Id = tbl_Collection_AreaMember_Model.Payment_Status left join 
                 (select  FilePath,MemId from tbl_fileupload_Model where tbl_fileupload_Model.[Type] = 1)  as file_ on file_.MemId = tbl_Member_Model.MemId
-                where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'  and tbl_Application_Model.Status =14";
+                where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'  and tbl_Application_Model.Status =14 and tbl_Member_Model.Status=1";
                             DataTable tbl_application_details_2 = db.SelectDb(sql_applicationdetails_2).Tables[0];
 
                             if (tbl_application_details_2.Rows.Count != 0)
@@ -7424,57 +7452,59 @@ FROM            tbl_Area_Model INNER JOIN
                                         }
                                         else
                                         {
-                                            var item = new CollectionVM();
-                                            item.Fname = dr["Fname"].ToString();
-                                            item.Mname = dr["Mname"].ToString();
-                                            item.Lname = dr["Lname"].ToString();
-                                            item.Suffix = dr["Suffix"].ToString();
-                                            item.Remarks = dr["Remarks"].ToString();
-                                            item.Penalty = dr["Penalty"].ToString();
-                                            item.DateCreated = datec;
-                                            item.PastDue = interest_amount.ToString();
-                                            item.MemId = dr["MemId"].ToString();
-                                            item.Cno = dr["Cno"].ToString();
-                                            item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
-                                            item.NAID = dr["NAID"].ToString();
-                                            item.Co_Fname = dr["Co_Fname"].ToString();
-                                            item.Co_Mname = dr["Co_Mname"].ToString();
-                                            item.Co_Lname = dr["Co_Lname"].ToString();
-                                            item.Co_Suffix = dr["Co_Suffix"].ToString();
-                                            item.Co_Borrower = dr["Co_Fname"].ToString() + " " + dr["Co_Mname"].ToString() + " " + dr["Co_Lname"].ToString() + " " + dr["Co_Suffix"].ToString();
-                                            item.Co_Cno = dr["Co_Cno"].ToString();
-                                            item.DailyCollectibles = dr["DailyCollectibles"].ToString();
-                                            item.AmountDue = total_bal.ToString();
-                                            item.DueDate = dr["DueDate"].ToString();
-                                            item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
-                                            item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
-                                            item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString();
-                                            item.LoanPrincipal = dr["LoanPrincipal"].ToString();
-                                            item.ReleasingDate = dr["ReleasingDate"].ToString();
-                                            item.TypeOfCollection = dr["TypeOfCollection"].ToString();
-                                            item.CollectedAmount = dr["CollectedAmount"].ToString();
-                                            item.LapsePayment = dr["LapsePayment"].ToString();
-                                            item.AdvancePayment = dr["AdvancePayment"].ToString() == "" ? "0" : dr["AdvancePayment"].ToString();
-                                            item.Payment_Status_Id = dr["Payment_Status_Id"].ToString();
-                                            item.Payment_Status = dr["Payment_Status"].ToString();
-                                            item.Collection_Status = Collection_Status;//
-                                            item.Collection_Status_Id = Collection_Status_Id;//
-                                            item.Payment_Method = dr["Payment_Method"].ToString();
-                                            item.AreaName = dr_area["Area"].ToString();
-                                            item.AreaID = dr_area["AreaID"].ToString();
-                                            item.FieldExpenses = FieldExpenses;
-                                            item.Area_RefNo = Area_RefNo;//
-                                            item.Collection_RefNo = Collection_RefNo;//
-                                            item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
-                                            item.FOID = dr_area["FOID"].ToString();
-                                            item.FilePath = dr["FilePath"].ToString();
-                                            item.DateCollected = dr["DateCollected"].ToString();
-                                            item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
+                                            if (double.Parse(dr["AmountDue"].ToString()) != 0)
+                                            {
+                                                var item = new CollectionVM();
+                                                item.Fname = dr["Fname"].ToString();
+                                                item.Mname = dr["Mname"].ToString();
+                                                item.Lname = dr["Lname"].ToString();
+                                                item.Suffix = dr["Suffix"].ToString();
+                                                item.Remarks = dr["Remarks"].ToString();
+                                                item.Penalty = dr["Penalty"].ToString();
+                                                item.DateCreated = datec;
+                                                item.PastDue = interest_amount.ToString();
+                                                item.MemId = dr["MemId"].ToString();
+                                                item.Cno = dr["Cno"].ToString();
+                                                item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
+                                                item.NAID = dr["NAID"].ToString();
+                                                item.Co_Fname = dr["Co_Fname"].ToString();
+                                                item.Co_Mname = dr["Co_Mname"].ToString();
+                                                item.Co_Lname = dr["Co_Lname"].ToString();
+                                                item.Co_Suffix = dr["Co_Suffix"].ToString();
+                                                item.Co_Borrower = dr["Co_Fname"].ToString() + " " + dr["Co_Mname"].ToString() + " " + dr["Co_Lname"].ToString() + " " + dr["Co_Suffix"].ToString();
+                                                item.Co_Cno = dr["Co_Cno"].ToString();
+                                                item.DailyCollectibles = dr["DailyCollectibles"].ToString();
+                                                item.AmountDue = total_bal.ToString();
+                                                item.DueDate = dr["DueDate"].ToString();
+                                                item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
+                                                item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
+                                                item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString();
+                                                item.LoanPrincipal = dr["LoanPrincipal"].ToString();
+                                                item.ReleasingDate = dr["ReleasingDate"].ToString();
+                                                item.TypeOfCollection = dr["TypeOfCollection"].ToString();
+                                                item.CollectedAmount = dr["CollectedAmount"].ToString();
+                                                item.LapsePayment = dr["LapsePayment"].ToString();
+                                                item.AdvancePayment = dr["AdvancePayment"].ToString() == "" ? "0" : dr["AdvancePayment"].ToString();
+                                                item.Payment_Status_Id = dr["Payment_Status_Id"].ToString();
+                                                item.Payment_Status = dr["Payment_Status"].ToString();
+                                                item.Collection_Status = Collection_Status;//
+                                                item.Collection_Status_Id = Collection_Status_Id;//
+                                                item.Payment_Method = dr["Payment_Method"].ToString();
+                                                item.AreaName = dr_area["Area"].ToString();
+                                                item.AreaID = dr_area["AreaID"].ToString();
+                                                item.FieldExpenses = FieldExpenses;
+                                                item.Area_RefNo = Area_RefNo;//
+                                                item.Collection_RefNo = Collection_RefNo;//
+                                                item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
+                                                item.FOID = dr_area["FOID"].ToString();
+                                                item.FilePath = dr["FilePath"].ToString();
+                                                item.DateCollected = dr["DateCollected"].ToString();
+                                                item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
 
-                                            result.Add(item);
+                                                result.Add(item);
+                                            }
                                         }
                                     }
-
                                 }
                                 else
                                 {
@@ -7561,54 +7591,57 @@ FROM            tbl_Area_Model INNER JOIN
                                             }
                                             else
                                             {
-                                                var item = new CollectionVM();
-                                                item.Fname = dr["Fname"].ToString();
-                                                item.Mname = dr["Mname"].ToString();
-                                                item.Lname = dr["Lname"].ToString();
-                                                item.Suffix = dr["Suffix"].ToString();
-                                                item.Remarks = dr["Remarks"].ToString();
-                                                item.Penalty = dr["Penalty"].ToString();
-                                                item.DateCreated = datec;
-                                                item.PastDue = interest_amount.ToString();
-                                                item.MemId = dr["MemId"].ToString();
-                                                item.Cno = dr["Cno"].ToString();
-                                                item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
-                                                item.NAID = dr["NAID"].ToString();
-                                                item.Co_Fname = dr["Co_Fname"].ToString();
-                                                item.Co_Mname = dr["Co_Mname"].ToString();
-                                                item.Co_Lname = dr["Co_Lname"].ToString();
-                                                item.Co_Suffix = dr["Co_Suffix"].ToString();
-                                                item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
-                                                item.Co_Cno = dr["Co_Cno"].ToString();
-                                                item.DailyCollectibles = dr["DailyCollectibles"].ToString();
-                                                item.AmountDue = total_bal.ToString();
-                                                item.DueDate = dr["DueDate"].ToString();
-                                                item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
-                                                item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
-                                                item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString();
-                                                item.LoanPrincipal = dr["LoanPrincipal"].ToString();
-                                                item.ReleasingDate = dr["ReleasingDate"].ToString();
-                                                item.TypeOfCollection = dr["TypeOfCollection"].ToString();
-                                                item.CollectedAmount = dr["CollectedAmount"].ToString();
-                                                item.LapsePayment = dr["LapsePayment"].ToString();
-                                                item.AdvancePayment = dr["AdvancePayment"].ToString() == "" ? "0" : dr["AdvancePayment"].ToString();
-                                                item.Payment_Status_Id = dr["Payment_Status_Id"].ToString();
-                                                item.Payment_Status = dr["Payment_Status"].ToString();
-                                                item.Collection_Status = Collection_Status;//
-                                                item.Collection_Status_Id = Collection_Status_Id;//
-                                                item.Payment_Method = dr["Payment_Method"].ToString();
-                                                item.AreaName = dr_area["Area"].ToString();
-                                                item.AreaID = dr_area["AreaID"].ToString();
-                                                item.FieldExpenses = FieldExpenses;
-                                                item.Area_RefNo = Area_RefNo;//
-                                                item.Collection_RefNo = Collection_RefNo;//
-                                                item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
-                                                item.FOID = dr_area["FOID"].ToString();
-                                                item.FilePath = dr["FilePath"].ToString();
-                                                item.DateCollected = dr["DateCollected"].ToString();
-                                                item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
+                                                if (double.Parse(dr["AmountDue"].ToString()) != 0)
+                                                {
+                                                    var item = new CollectionVM();
+                                                    item.Fname = dr["Fname"].ToString();
+                                                    item.Mname = dr["Mname"].ToString();
+                                                    item.Lname = dr["Lname"].ToString();
+                                                    item.Suffix = dr["Suffix"].ToString();
+                                                    item.Remarks = dr["Remarks"].ToString();
+                                                    item.Penalty = dr["Penalty"].ToString();
+                                                    item.DateCreated = datec;
+                                                    item.PastDue = interest_amount.ToString();
+                                                    item.MemId = dr["MemId"].ToString();
+                                                    item.Cno = dr["Cno"].ToString();
+                                                    item.Borrower = dr["Fname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Mname"].ToString() + " " + dr["Suffix"].ToString();
+                                                    item.NAID = dr["NAID"].ToString();
+                                                    item.Co_Fname = dr["Co_Fname"].ToString();
+                                                    item.Co_Mname = dr["Co_Mname"].ToString();
+                                                    item.Co_Lname = dr["Co_Lname"].ToString();
+                                                    item.Co_Suffix = dr["Co_Suffix"].ToString();
+                                                    item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + " " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                                                    item.Co_Cno = dr["Co_Cno"].ToString();
+                                                    item.DailyCollectibles = dr["DailyCollectibles"].ToString();
+                                                    item.AmountDue = total_bal.ToString();
+                                                    item.DueDate = dr["DueDate"].ToString();
+                                                    item.DateOfFullPayment = dr["DateOfFullPayment"].ToString();
+                                                    item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
+                                                    item.ApprovedAdvancePayment = dr["ApprovedAdvancePayment"].ToString();
+                                                    item.LoanPrincipal = dr["LoanPrincipal"].ToString();
+                                                    item.ReleasingDate = dr["ReleasingDate"].ToString();
+                                                    item.TypeOfCollection = dr["TypeOfCollection"].ToString();
+                                                    item.CollectedAmount = dr["CollectedAmount"].ToString();
+                                                    item.LapsePayment = dr["LapsePayment"].ToString();
+                                                    item.AdvancePayment = dr["AdvancePayment"].ToString() == "" ? "0" : dr["AdvancePayment"].ToString();
+                                                    item.Payment_Status_Id = dr["Payment_Status_Id"].ToString();
+                                                    item.Payment_Status = dr["Payment_Status"].ToString();
+                                                    item.Collection_Status = Collection_Status;//
+                                                    item.Collection_Status_Id = Collection_Status_Id;//
+                                                    item.Payment_Method = dr["Payment_Method"].ToString();
+                                                    item.AreaName = dr_area["Area"].ToString();
+                                                    item.AreaID = dr_area["AreaID"].ToString();
+                                                    item.FieldExpenses = FieldExpenses;
+                                                    item.Area_RefNo = Area_RefNo;//
+                                                    item.Collection_RefNo = Collection_RefNo;//
+                                                    item.FieldOfficer = dr_area["Fname"].ToString() + " " + dr_area["Mname"].ToString() + " " + dr_area["Lname"].ToString() + " " + dr_area["Suffix"].ToString();
+                                                    item.FOID = dr_area["FOID"].ToString();
+                                                    item.FilePath = dr["FilePath"].ToString();
+                                                    item.DateCollected = dr["DateCollected"].ToString();
+                                                    item.LoanInsurance = dr["LoanInsuranceAmount"].ToString();
 
-                                                result.Add(item);
+                                                    result.Add(item);
+                                                }
                                             }
                                         }
                                     }

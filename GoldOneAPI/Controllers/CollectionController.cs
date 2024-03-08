@@ -867,7 +867,7 @@ GROUP BY tbl_CollectionArea_Model.Area_RefNo, tbl_CollectionArea_Model.Collectio
                 string Update = "";
                 string filePath = @"C:\data\remit.json"; // Replace with your desired file path
 
-                dbmet.insertlgos(filePath, JsonSerializer.Serialize(data));
+                //dbmet.insertlgos(filePath, JsonSerializer.Serialize(data));
                 string result = "";
                 string payment_status = "";
                 double lapses = 0;
@@ -903,11 +903,11 @@ GROUP BY tbl_CollectionArea_Model.Area_RefNo, tbl_CollectionArea_Model.Collectio
                             double total_sum_saving = Math.Ceiling(double.Parse(total_savings_amount.TotalSavingsAmount) + double.Parse(data.Savings.ToString()) );
                              Update += $@"
                                             UPDATE [dbo].[tbl_MemberSavings_Model]
-                                               SET TotalSavingsAmount] =  '" + total_sum_saving + "' ," +
+                                               SET TotalSavingsAmount =  '" + total_sum_saving + "' ," +
                                                   "[DateUpdated] ='" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd") + "', " +
                                                   "[UpdatedFrom] = 'Update from Collection Remitance Module' ," +
                                                   "[UpdateBy] = '" + data.UserId + "' " +
-                                         "WHERE  LDID ='" + data.MemId + "'";
+                                         "WHERE  MemId ='" + data.MemId + "'";
 
                       
 
@@ -943,7 +943,7 @@ GROUP BY tbl_CollectionArea_Model.Area_RefNo, tbl_CollectionArea_Model.Collectio
                                           [OutstandingBalance]
                                       FROM [GoldOne].[dbo].[tbl_LoanHistory_Model] where MemId = '" + memid.MemId + "'";
                     DataTable sql_loanhistory_tbl = db.SelectDb(sql_loanhistory).Tables[0];
-
+                  
                     double total_outstanding_bal = Math.Abs (double.Parse(data.AmountCollected.ToString()) - double.Parse(sql_loanhistory_tbl.Rows[0]["OutstandingBalance"].ToString()));
                     string Update_history = $@"
                                         UPDATE [dbo].[tbl_LoanHistory_Model]

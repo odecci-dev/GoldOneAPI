@@ -39,11 +39,11 @@ namespace GoldOneAPI.Manager
             //cnnstr = "Data Source=EC2AMAZ-AN808JE\\MSSQLSERVER01;Initial Catalog=AOPCDB;User ID=test;Password=1234";
             //cnnstr = "Data Source=EC2AMAZ-2PRMHQI;Initial Catalog=AOPCDB_DEV;User ID=test;Password=1234";
             //cnnstr = "Data Source=EC2AMAZ-2PRMHQI;Initial Catalog=AOPCDB;User ID=test;Password=1234";
-        // cnnstr = "Data Source=DESKTOP-RUE1DLV;Initial Catalog=GoldOne;User ID=test;Password=1234"; //-- goldone server
+         cnnstr = "Data Source=DESKTOP-RUE1DLV;Initial Catalog=GoldOne;User ID=test;Password=1234"; //-- goldone server
             //cnnstr = "Data Source=LAPTOP-AIQ21DVO\\ODECCISERVER;Initial Catalog=GoldOne;User ID=test;Password=1234";
     // cnnstr = "Data Source=EC2AMAZ-V52FJK1;Initial Catalog=GoldOne;User ID=test;Password=1234"; //Odecci Server
            // cnnstr = "Data Source=LERJUN-PC;Initial Catalog=AOPCDB_DEV;User ID=test;Password=1234";
-  cnnstr = "Data Source=LERJUN-PC;Initial Catalog=GoldOne;User ID=test;Password=1234";
+ // cnnstr = "Data Source=LERJUN-PC;Initial Catalog=GoldOne;User ID=test;Password=1234";
       // cnnstr = "Data Source=localhost;Initial Catalog=GoldOne;User ID=sa;Password=reallyStrongPwd123";
             conn = new SqlConnection(cnnstr);
         } 

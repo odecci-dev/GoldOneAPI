@@ -93,7 +93,8 @@ namespace GoldOneAPI.Controllers
                            ,[UsedSavings]
                            ,[DueDate]
                            ,[DateCreated]
-                           ,[MemId])
+                           ,[MemId]
+                            ,[NAID])
                             VALUES
                         ('" + loan_details.LoanBalance + "'," +
                        "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "'," +
@@ -102,7 +103,8 @@ namespace GoldOneAPI.Controllers
                           "'" + data.TotalSavingsUsed+ "'," +
                           "'" + loan_details.DueDate + "'," +
                             "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "'," +
-                   "'" + loan_details.MemId + "') ";
+                            "'" + loan_details.MemId + "'," +
+                   "'" + data.NAID + "') ";
                 result = db.AUIDB_WithParam(result) + " Updated";
 
 

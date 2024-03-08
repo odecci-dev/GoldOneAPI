@@ -806,14 +806,15 @@ namespace GoldOneAPI.Controllers
 
                 dbmet.insertlgos(filePath, JsonSerializer.Serialize(data[0]));
                 string Update = "";
-                sql = $@"SELECT        tbl_Member_Model.Id, tbl_Member_Model.Fname, tbl_Member_Model.Lname, tbl_Member_Model.Mname, tbl_Member_Model.Suffix, tbl_Member_Model.Age, tbl_Member_Model.Barangay, tbl_Member_Model.City, 
+                sql = $@"
+SELECT     top(1)  tbl_Member_Model.Id,tbl_Application_Model.Id, tbl_Member_Model.Fname, tbl_Member_Model.Lname, tbl_Member_Model.Mname, tbl_Member_Model.Suffix, tbl_Member_Model.Age, tbl_Member_Model.Barangay, tbl_Member_Model.City, 
                          tbl_Member_Model.Civil_Status, tbl_Member_Model.Cno, tbl_Member_Model.Country, tbl_Member_Model.DOB, tbl_Member_Model.EmailAddress, tbl_Member_Model.Gender, tbl_Member_Model.HouseNo, 
                          tbl_Member_Model.House_Stats, tbl_Member_Model.POB, tbl_Member_Model.Province, tbl_Member_Model.YearsStay, tbl_Member_Model.ZipCode, tbl_Member_Model.Status, tbl_Member_Model.DateCreated, 
                          tbl_Member_Model.DateUpdated, tbl_Member_Model.MemId, tbl_Member_Model.OwnProperty, tbl_Member_Model.OwnVehicles, tbl_FamBackground_Model.FamId, tbl_CoMaker_Model.CMID, tbl_Application_Model.NAID
 FROM            tbl_Member_Model INNER JOIN
                          tbl_FamBackground_Model ON tbl_Member_Model.MemId = tbl_FamBackground_Model.MemId INNER JOIN
                          tbl_CoMaker_Model ON tbl_Member_Model.MemId = tbl_CoMaker_Model.MemId INNER JOIN
-                         tbl_Application_Model ON tbl_Member_Model.MemId = tbl_Application_Model.MemId where tbl_Member_Model.MemId ='" + data[0].MemId + "'";
+                         tbl_Application_Model ON tbl_Member_Model.MemId = tbl_Application_Model.MemId where tbl_Member_Model.MemId ='"+data[0].MemId+"' order by tbl_Application_Model.Id desc";
                 DataTable dt = db.SelectDb(sql).Tables[0];
                 var result = new UserModel();
                 string city_ = Regex.Replace(data[0].Barangay.ToUpper() + data[0].City.ToUpper(), "[^a-zA-Z]", "");
