@@ -162,7 +162,8 @@ namespace GoldOneAPI.Controllers
         public async Task<IActionResult> Reports_CollectionList(int page, int pageSize, DateTime datefrom, DateTime dateto)
         {
 
-            var res_list = dbmet.GetReport_CollectionList().ToList();
+            var res_list = dbmet.ShowAreaReports(datefrom, dateto).ToList();
+            //var res_list = dbmet.GetReport_CollectionList(datefrom, dateto).ToList();
 
             //return Ok();
 

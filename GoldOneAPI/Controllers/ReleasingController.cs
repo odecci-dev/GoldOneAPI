@@ -51,8 +51,49 @@ namespace GoldOneAPI.Controllers
                 string duedate = "";
                 string outstanding_bal = "";
                 var loan_details = dbmet.GetLoanSummary(data.NAID).FirstOrDefault();
-                //var payment_status = loan_details.AdvancePayment != "0" ? "2" : loan_details.AdvancePayment;
-                //var payment_method = loan_details.AdvancePayment != "0" ? null : loan_details.AdvancePayment;
+                if (data.totalSavingsUsed != 0 || data.totalSavingsUsed != null)
+                {
+                    var payment_status = data.totalSavingsUsed != 0 ? 1 : data.totalSavingsUsed;
+                    var payment_method = data.totalSavingsUsed.ToString() != "0" ? "CASH" : data.totalSavingsUsed.ToString();
+
+                    string last_trans = $@"SELECT top(1) tbl_Application_Model.NAID,tbl_LoanHistory_Model.[OutstandingBalance] FROM [dbo].[tbl_Application_Model] inner JOIN
+                                        tbl_LoanHistory_Model on tbl_LoanHistory_Model.NAID = tbl_Application_Model.NAID
+
+                                        where Status <> 0 and tbl_Application_Model.MemId= '"+ loan_details .MemId+ "' order by tbl_Application_Model.Id desc  ";
+                    DataTable dt_last_trans = db.SelectDb(last_trans).Tables[0];
+
+                    if (dt_last_trans.Rows[0]["OutstandingBalance"].ToString() != "0")
+                    {
+
+                        string insert = $@"INSERT INTO [dbo].[tbl_Collection_AreaMember_Model]
+                                   ([NAID]
+                                   ,[AdvancePayment]
+                                   ,[LapsePayment]
+                                   ,[CollectedAmount]
+                                   ,[Savings]
+                                   ,[Payment_Status]
+                                   ,[Payment_Method]
+                                   ,[AdvanceStatus]
+                                   ,[DateCollected])
+                             VALUES
+                                   ('" + dt_last_trans.Rows[0]["NAID"].ToString() + "'," +
+                                    "'0'," +
+                                   "'0'," +
+                                    "'" + data.totalSavingsUsed + "'," +
+                                   "'0'," +
+                                    "'" + payment_status + "'," +
+                                   "'" + payment_method + "'," +
+                                   "'0'," +
+                               "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
+                        db.AUIDB_WithParam(insert);
+
+                        string filePaths = @"C:\data\savingsused.json"; // Replace with your desired file path
+
+                        dbmet.insertlgos(filePaths, JsonSerializer.Serialize(insert + " \n "  + db.AUIDB_WithParam(insert)));
+                    }
+
+                }
+            
                 //if (loan_details.ApprovedAdvancePayment != "" || loan_details.ApprovedAdvancePayment != "0")
                 //{
                 //    int adv_stats = 0;
@@ -60,7 +101,7 @@ namespace GoldOneAPI.Controllers
                 //    {
                 //        adv_stats = 1;
                 //    }
-                //   savings = loan_details.TotalSavingsAmount == "" ? "0.00" : loan_details.TotalSavingsAmount;
+                //    savings = loan_details.TotalSavingsAmount == "" ? "0.00" : loan_details.TotalSavingsAmount;
                 //    duedate = loan_details.DueDate == "" ? null : loan_details.DueDate;
                 //    string insert = $@"INSERT INTO [dbo].[tbl_Collection_AreaMember_Model]
                 //                   ([NAID]
@@ -78,37 +119,37 @@ namespace GoldOneAPI.Controllers
                 //                   "'0'," +
                 //                    "'" + loan_details.ApprovedAdvancePayment + "'," +
                 //                   "'" + savings + "'," +
-                //                    "'"+payment_status+"'," +
-                //                   "'"+ payment_method + "'," +
-                //                   "'"+ adv_stats + "'," +
+                //                    "'" + payment_status + "'," +
+                //                   "'" + payment_method + "'," +
+                //                   "'" + adv_stats + "'," +
                 //               "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "') ";
                 //    db.AUIDB_WithParam(insert);
 
                 //}
-                result += $@"INSERT INTO [dbo].[tbl_LoanHistory_Model]
-                           ([LoanAmount]
-                           ,[DateReleased]
-                           ,[Savings]
-                           ,[OutstandingBalance]
-                           ,[UsedSavings]
-                           ,[DueDate]
-                           ,[DateCreated]
-                           ,[MemId]
-                            ,[NAID])
-                            VALUES
-                        ('" + loan_details.LoanBalance + "'," +
-                       "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "'," +
-                          "'" + data.TotalSavingsUsed + "'," +
-                          "'" + loan_details.LoanBalance + "'," +
-                          "'" + data.TotalSavingsUsed+ "'," +
-                          "'" + loan_details.DueDate + "'," +
-                            "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "'," +
-                            "'" + loan_details.MemId + "'," +
-                   "'" + data.NAID + "') ";
-                result = db.AUIDB_WithParam(result) + " Updated";
+              // string result_insert = $@"INSERT INTO [dbo].[tbl_LoanHistory_Model]
+              //             ([LoanAmount]
+              //             ,[DateReleased]
+              //             ,[Savings]
+              //             ,[OutstandingBalance]
+              //             ,[UsedSavings]
+              //             ,[DueDate]
+              //             ,[DateCreated]
+              //             ,[MemId]
+              //              ,[NAID])
+              //              VALUES
+              //          ('" + loan_details.LoanBalance + "'," +
+              //         "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "'," +
+              //            "'" + data.totalSavingsUsed + "'," +
+              //            "'" + loan_details.LoanBalance + "'," +
+              //            "'" + data.totalSavingsUsed+ "'," +
+              //            "'" + loan_details.DueDate + "'," +
+              //              "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "'," +
+              //              "'" + loan_details.MemId + "'," +
+              //     "'" + data.NAID + "') ";
+              //db.AUIDB_WithParam(result_insert) ;
 
 
-                if (data.TotalSavingsUsed != 0)
+                if (data.totalSavingsUsed != 0)
                 {
                     double remaining_savings = 0;
                     string sql = $@"SELECT  [Id]
@@ -121,7 +162,7 @@ namespace GoldOneAPI.Controllers
                           WHERE MemId = '" + loan_details.MemId + "'";
                     DataTable get_memid = db.SelectDb(sql).Tables[0];
                     double get_total_savings_amount = double.Parse(get_memid.Rows[0]["TotalSavingsAmount"].ToString());
-                    remaining_savings = get_total_savings_amount - double.Parse(data.TotalSavingsUsed.ToString());
+                    remaining_savings = get_total_savings_amount - double.Parse(data.totalSavingsUsed.ToString());
 
                     string updatesavings = "";
                     updatesavings += $@"UPDATE [dbo].[tbl_Application_Model]
@@ -181,7 +222,7 @@ namespace GoldOneAPI.Controllers
 
                 System.IO.File.WriteAllText(filePath, JsonSerializer.Serialize(data));
 
-
+                var loan_details = dbmet.GetLoanSummary(data.NAID).FirstOrDefault();
 
                 save_collect += $@"UPDATE [dbo].[tbl_LoanDetails_Model]
                                SET [Status] = '15' ," +
@@ -209,12 +250,52 @@ namespace GoldOneAPI.Controllers
                         DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), "Releasing Module", name, dr["UserId"].ToString(), "2",data.NAID);
                 }
 
-                string Update_history = $@"
+          
+                string lhsty = $@"WITH NumberedResults AS (
+                                SELECT *, ROW_NUMBER() OVER (ORDER BY id DESC) AS RowNum
+                                FROM [tbl_LoanHistory_Model] where MemId='MEM-0109'
+                            )
+                            SELECT *
+                            FROM NumberedResults
+                            WHERE RowNum = 2;";
+                DataTable tbl_lhsty = db.SelectDb(lhsty).Tables[0];
+                if (double.Parse(tbl_lhsty.Rows[0]["OutstandingBalance"].ToString()) >= 0)
+                {
+
+                    if (tbl_lhsty.Rows.Count == 0)
+                    {
+                        string result_insert = $@"INSERT INTO [dbo].[tbl_LoanHistory_Model]
+                           ([LoanAmount]
+                           ,[DateReleased]
+                           ,[Savings]
+                           ,[OutstandingBalance]
+                           ,[UsedSavings]
+                           ,[DueDate]
+                           ,[DateCreated]
+                           ,[MemId]
+                            ,[NAID])
+                            VALUES
+                        ('" + loan_details.LoanBalance + "'," +
+                        "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "'," +
+                           "'" + data.totalSavingsUsed + "'," +
+                           "'" + loan_details.LoanBalance + "'," +
+                           "'" + data.totalSavingsUsed + "'," +
+                           "'" + loan_details.DueDate + "'," +
+                             "'" + Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss") + "'," +
+                             "'" + loan_details.MemId + "'," +
+                    "'" + data.NAID + "') ";
+                        db.AUIDB_WithParam(result_insert);
+                    }
+                    else
+                    {
+                        string Update_history = $@"
                                         UPDATE [dbo].[tbl_LoanHistory_Model]
                                            SET [UsedSavings] = '
-                                        " + data.TotalSavingsUsed + "' " +
-                                      "where MemId = '" + data.MemId + "'";
-                db.AUIDB_WithParam(Update_history);
+                                        " + data.totalSavingsUsed + "' " +
+                                    "where MemId = '" + data.MemId + "'";
+                        db.AUIDB_WithParam(Update_history);
+                    }
+                }
                 return Ok(result);
 
                 //string username = $@"SELECT  Fname,Lname,Mname FROM [dbo].[tbl_User_Model] where UserId = '" + data.Approvedby + "'";

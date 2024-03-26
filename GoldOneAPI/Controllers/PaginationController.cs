@@ -84,7 +84,7 @@ namespace GoldOneAPI.Controllers
                             totalItems = Member.Count;
                             totalPages = (int)Math.Ceiling((double)totalItems / int.Parse(page_size.ToString()));
 
-                            items = Member.Skip((page - 1) * int.Parse(page_size.ToString())).Take(int.Parse(page_size.ToString())).ToList();
+                            items = Member.Skip((page - 1) * int.Parse(page_size.ToString())).Take(int.Parse(page_size.ToString())).OrderByDescending(a => a.DateCreated).Take(1).ToList();
                         }
                         else if (FilterName == null && status != null)
                         {

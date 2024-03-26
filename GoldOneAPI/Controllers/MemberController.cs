@@ -1,4 +1,4 @@
-﻿using AuthSystem.Models;
+﻿ using AuthSystem.Models;
 using GoldOneAPI.Manager;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +20,7 @@ using System.Text.RegularExpressions;
 using System.Collections;
 using static GoldOneAPI.Controllers.HolidayController;
 using System.Text;
+using System.Reflection.Emit;
 
 namespace GoldOneAPI.Controllers
 {
@@ -167,6 +168,7 @@ namespace GoldOneAPI.Controllers
         {
 
             public string? Fullname { get; set; }
+            public string? ProfilePath { get; set; }
             public string? Fname { get; set; }
             public string? Lname { get; set; }
             public string? Mname { get; set; }
@@ -190,6 +192,7 @@ namespace GoldOneAPI.Controllers
             public string? DateCreated { get; set; }
             public string? ApplicationStatus { get; set; }
             public string? HouseStatusId { get; set; }
+            public string? HouseStatus_Id { get; set; }
 
             //-----------MonthlyBills
 
@@ -534,17 +537,18 @@ namespace GoldOneAPI.Controllers
             try
             {
 
-                var result = dbmet.GetMembershipFilterByFullname(data.Fullname).ToList();
-                if (result.Count != 0)
+               
+                if (data.Fullname != "")
                 {
+                    var result = dbmet.MemApplicationList().Where(a => a.Fullname.ToUpper().Contains(data.Fullname.ToUpper())).ToList().Take(1);
                     return Ok(result);
                 }
                 else
                 {
-                    var res = dbmet.GetMemberList().Where(a => a.Fullname.ToUpper().Contains(data.Fullname.ToUpper())).ToList();
+                    var res = dbmet.MemApplicationList().ToList();
                     if (data.Fullname == "")
                     {
-                        var res_ = dbmet.GetMemberList().ToList();
+                        var res_= dbmet.MemApplicationList().ToList();
                         return Ok(res_);
                     }
                     else
@@ -577,6 +581,7 @@ namespace GoldOneAPI.Controllers
             public string? MemId { get; set; }
             public string? Naid { get; set; }
             public string? ProfilePath { get; set; }
+            public string? DateCreated { get; set; }
 
         }
         public class DeclineReports
@@ -1335,34 +1340,140 @@ FROM            tbl_Member_Model INNER JOIN
                 {
                     if (data.Count == 1)
                     {
-                        w_column += " and " + data[x].Column + " like '%" + data[x].Values + "%' ";
+                        w_column += " and " + data[x].Column + " = '" + data[x].Values + "' ";
                     }
                     else
                     {
-                        w_column += " and " + data[x].Column + " like '%" + data[x].Values + "%'";
+                        w_column += " and " + data[x].Column + " = '" + data[x].Values + "'";
                     }
                 }
-                sql = $@"SELECT        tbl_Member_Model.Id, tbl_Member_Model.Fname, tbl_Member_Model.Lname, tbl_Member_Model.Mname, tbl_Member_Model.Suffix, tbl_Member_Model.Age, tbl_Member_Model.Barangay, tbl_Member_Model.City, 
-                         tbl_Member_Model.Civil_Status, tbl_Member_Model.Cno, tbl_Member_Model.Country, tbl_Member_Model.DOB, tbl_Member_Model.EmailAddress, tbl_Member_Model.Gender, tbl_Member_Model.HouseNo, 
-                         tbl_Member_Model.POB, tbl_Member_Model.Province, tbl_Member_Model.YearsStay, tbl_Member_Model.ZipCode, tbl_HouseStatus_Model.Id AS HouseStatus_Id, tbl_HouseStatus_Model.Description AS HouseStatus, 
-                         tbl_Status_Model.Name AS status, tbl_Member_Model.DateCreated, tbl_Member_Model.DateUpdated, tbl_JobInfo_Model.CompanyAddress, tbl_JobInfo_Model.CompanyName, tbl_JobInfo_Model.JobDescription,file_.FilePath as ProfilePath
-                        FROM            tbl_Member_Model INNER JOIN
-                                                 tbl_HouseStatus_Model ON tbl_Member_Model.House_Stats = tbl_HouseStatus_Model.Id INNER JOIN
-                                                 tbl_Status_Model ON tbl_Member_Model.Status = tbl_Status_Model.Id INNER JOIN
-                                                 tbl_JobInfo_Model ON tbl_Member_Model.MemId = tbl_JobInfo_Model.MemId left join
-						                        (select  FilePath,MemId from tbl_fileupload_Model where tbl_fileupload_Model.[Type] = 1)  as file_ on file_.MemId = tbl_Member_Model.MemId 
-                        WHERE        (tbl_Member_Model.Status = 1) " + w_column + "";
+                //sql = $@"SELECT        tbl_Member_Model.Id, tbl_Member_Model.Fname, tbl_Member_Model.Lname, tbl_Member_Model.Mname, tbl_Member_Model.Suffix, tbl_Member_Model.Age, tbl_Member_Model.Barangay, tbl_Member_Model.City, 
+                //         tbl_Member_Model.Civil_Status, tbl_Member_Model.Cno, tbl_Member_Model.Country, tbl_Member_Model.DOB, tbl_Member_Model.EmailAddress, tbl_Member_Model.Gender, tbl_Member_Model.HouseNo, 
+                //         tbl_Member_Model.POB, tbl_Member_Model.Province, tbl_Member_Model.YearsStay, tbl_Member_Model.ZipCode, tbl_HouseStatus_Model.Id AS HouseStatus_Id, tbl_HouseStatus_Model.Description AS HouseStatus, 
+                //         tbl_Status_Model.Name AS status, tbl_Member_Model.DateCreated, tbl_Member_Model.DateUpdated, tbl_JobInfo_Model.CompanyAddress, tbl_JobInfo_Model.CompanyName, tbl_JobInfo_Model.JobDescription,file_.FilePath as ProfilePath
+                //        FROM            tbl_Member_Model INNER JOIN
+                //                                 tbl_HouseStatus_Model ON tbl_Member_Model.House_Stats = tbl_HouseStatus_Model.Id INNER JOIN
+                //                                 tbl_Status_Model ON tbl_Member_Model.Status = tbl_Status_Model.Id INNER JOIN
+                //                                 tbl_JobInfo_Model ON tbl_Member_Model.MemId = tbl_JobInfo_Model.MemId left join
+                //              (select  FilePath,MemId from tbl_fileupload_Model where tbl_fileupload_Model.[Type] = 1)  as file_ on file_.MemId = tbl_Member_Model.MemId 
+                //        WHERE        (tbl_Member_Model.Status = 1) " + w_column + "";
 
-                var result = new List<MemberVM>();
+                //                sql = $@"SELECT distinct
+                //CONCAT( tbl_Member_Model.Fname,' ', tbl_Member_Model.Mname,' ', tbl_Member_Model.Lname,' ', tbl_Member_Model.Suffix) as Fullname,  
+                //tbl_Member_Model.Fname, tbl_Member_Model.Lname, tbl_Member_Model.Mname, tbl_Member_Model.Suffix, tbl_Member_Model.Age, tbl_Member_Model.Barangay, tbl_Member_Model.City, tbl_Member_Model.Civil_Status, 
+                //                         tbl_Member_Model.Cno, tbl_Member_Model.DOB, tbl_Member_Model.Country, tbl_Member_Model.EmailAddress, tbl_Member_Model.Gender, tbl_Member_Model.HouseNo, tbl_Member_Model.POB, 
+                //                         tbl_Member_Model.Province, tbl_Member_Model.YearsStay, tbl_Member_Model.ZipCode, tbl_Member_Model.DateCreated, tbl_Member_Model.MemId, tbl_HouseStatus_Model.Description AS House_Stats, 
+                //                         tbl_Status_Model.Name AS MemberStatus, tbl_MonthlyBills_Model.ElectricBill, tbl_MonthlyBills_Model.WaterBill, tbl_MonthlyBills_Model.OtherBills, tbl_MonthlyBills_Model.DailyExpenses, tbl_JobInfo_Model.Emp_Status, 
+                //                         tbl_JobInfo_Model.BO_Status, tbl_JobInfo_Model.OtherSOC, tbl_JobInfo_Model.MonthlySalary, tbl_JobInfo_Model.CompanyName,tbl_JobInfo_Model.CompanyAddress, tbl_JobInfo_Model.YOS, tbl_JobInfo_Model.JobDescription, 
+                //                         tbl_FamBackground_Model.Fname AS Fam_Fname, tbl_FamBackground_Model.Mname AS Fam_Mname, tbl_FamBackground_Model.Lname AS Fam_Lname, tbl_FamBackground_Model.Suffix AS Fam_Suffix, 
+                //                         tbl_FamBackground_Model.DOB AS Fam_DOB, tbl_FamBackground_Model.Age AS Fam_Age, tbl_FamBackground_Model.Emp_Status AS Fam_EmpStatus, tbl_FamBackground_Model.Position, 
+                //                         tbl_FamBackground_Model.YOS AS Fam_YOS, tbl_FamBackground_Model.CmpId AS Fam_CompanyName, tbl_FamBackground_Model.NOD AS Fam_NOD, tbl_FamBackground_Model.RTTB AS Fam_RTTB, 
+                //                         tbl_FamBackground_Model.FamId, tbl_CoMaker_Model.Fname AS Co_Fname, 
+                //                         tbl_CoMaker_Model.Mname AS Co_Mname, tbl_CoMaker_Model.Lnam, tbl_CoMaker_Model.Suffi AS Co_Suffix, tbl_CoMaker_Model.Gender AS Co_Gender, tbl_CoMaker_Model.DOB AS Co_DOB, 
+                //                         tbl_CoMaker_Model.Age AS Co_Age, tbl_CoMaker_Model.POB AS Co_POB, tbl_CoMaker_Model.CivilStatus, tbl_CoMaker_Model.Cno AS Co_Cno, tbl_CoMaker_Model.EmailAddress AS Co_EmailAddress, 
+                //                                                  tbl_HouseStatus_Model_1.Description AS Co_House_Stats, tbl_CoMaker_Model.HouseNo AS Co_HouseNo, tbl_CoMaker_Model.Barangay AS Co_Barangay, tbl_CoMaker_Model.City AS Co_City, tbl_CoMaker_Model.Region, 
+                //						 tbl_CoMaker_Model.Country AS Co_Country, tbl_CoMaker_Model.ZipCode AS Co_ZipCode, tbl_CoMaker_Model.YearsStay AS Co_YOS, tbl_CoMaker_Model.RTTB AS Co_RTTB, tbl_CoMaker_Model.CMID, 
+                //                         tbl_CoMaker_JobInfo_Model.JobDescription AS Co_JobDescription, tbl_CoMaker_JobInfo_Model.YOS AS Coj_YOS, tbl_CoMaker_JobInfo_Model.CompanyName AS Co_CompanyName, 
+                //                         tbl_CoMaker_JobInfo_Model.MonthlySalary AS Co_MonthlySalary, tbl_CoMaker_JobInfo_Model.Emp_Status AS Co_Emp_Status, tbl_CoMaker_JobInfo_Model.OtherSOC AS Co_OtherSOC, 
+                //                         tbl_CoMaker_JobInfo_Model.BO_Status AS Co_BO_Status, tbl_Status_Model.Name as Status, tbl_Application_Model.Status as ApplicationStatus, tbl_HouseStatus_Model.Id AS HouseStatusId, tbl_HouseStatus_Model_1.Id AS Co_HouseStatusId,tbl_Application_Model.NAID,tbl_LoanDetails_Model.TermsOfPayment , tbl_LoanDetails_Model.Purpose,tbl_CoMaker_JobInfo_Model.CompanyAddress as Co_CompanyAddress
+
+
+                //FROM            tbl_Application_Model left JOIN
+                //                         tbl_LoanDetails_Model ON tbl_Application_Model.NAID = tbl_LoanDetails_Model.NAID LEFT OUTER JOIN
+                //                         tbl_Member_Model LEFT OUTER JOIN
+                //                         tbl_HouseStatus_Model ON tbl_Member_Model.House_Stats = tbl_HouseStatus_Model.Id LEFT OUTER JOIN
+                //                         tbl_Status_Model AS tbl_Status_Model_1 ON tbl_Member_Model.Status = tbl_Status_Model_1.Id LEFT OUTER JOIN
+                //                         tbl_MonthlyBills_Model ON tbl_Member_Model.MemId = tbl_MonthlyBills_Model.MemId LEFT OUTER JOIN
+                //                         tbl_JobInfo_Model ON tbl_Member_Model.MemId = tbl_JobInfo_Model.MemId LEFT OUTER JOIN
+                //                         tbl_FamBackground_Model ON tbl_Member_Model.MemId = tbl_FamBackground_Model.MemId LEFT OUTER JOIN
+                //                         tbl_CoMaker_Model LEFT OUTER JOIN
+                //                         tbl_HouseStatus_Model AS tbl_HouseStatus_Model_1 ON tbl_CoMaker_Model.House_Stats = tbl_HouseStatus_Model_1.Id LEFT OUTER JOIN
+                //                         tbl_CoMaker_JobInfo_Model ON tbl_CoMaker_Model.CMID = tbl_CoMaker_JobInfo_Model.CMID LEFT OUTER JOIN
+                //                         tbl_Status_Model ON tbl_CoMaker_JobInfo_Model.Emp_Status = tbl_Status_Model.Id ON tbl_Member_Model.MemId = tbl_CoMaker_Model.MemId ON tbl_Application_Model.MemId = tbl_Member_Model.MemId";
+                //                var result = new List<MemberVM>();
+                //                DataTable table = db.SelectDb(sql).Tables[0];
+
+                //                foreach (DataRow dr in table.Rows)
+                //                {
+                //                    var item = new MemberVM();
+                //                    var datec = dr["DateCreated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateCreated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+                //                    var dateu = dr["DateUpdated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateUpdated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+
+                //                    item.Id = int.Parse(dr["id"].ToString());
+                //                    item.Fname = dr["Fname"].ToString();
+                //                    item.Lname = dr["Lname"].ToString();
+                //                    item.Mname = dr["Mname"].ToString();
+                //                    item.Suffix = dr["Suffix"].ToString();
+                //                    item.Age = dr["Age"].ToString();
+                //                    item.Barangay = dr["Barangay"].ToString();
+                //                    item.City = dr["City"].ToString();
+                //                    item.Civil_Status = dr["Civil_Status"].ToString();
+                //                    item.Country = dr["Country"].ToString();
+                //                    item.DOB = dr["DOB"].ToString();
+                //                    item.EmailAddress = dr["EmailAddress"].ToString();
+                //                    item.Gender = dr["Gender"].ToString();
+                //                    item.HouseNo = dr["HouseNo"].ToString();
+                //                    item.House_Stats = dr["HouseStatus"].ToString();
+                //                    item.HouseStatus_Id = dr["HouseStatus_Id"].ToString();
+                //                    item.CompanyAddress = dr["CompanyAddress"].ToString();
+                //                    item.CompanyName = dr["CompanyName"].ToString();
+                //                    item.JobDescription = dr["JobDescription"].ToString();
+                //                    item.YearsStay = dr["YearsStay"].ToString();
+                //                    item.Province = dr["Province"].ToString();
+                //                    item.ZipCode = dr["ZipCode"].ToString();
+                //                    item.Status = dr["status"].ToString();
+                //                    item.POB = dr["POB"].ToString();
+                //                    item.Cno = dr["Cno"].ToString();
+                //                    item.DateCreated = datec;
+                //                    item.DateUpdated = dateu;
+                //                    item.ProfilePath = dr["ProfilePath"].ToString();
+                //                    result.Add(item);
+                //                }
+
+                //                return Ok(result);
+                sql = $@"SELECT distinct
+CONCAT( tbl_Member_Model.Fname,' ', tbl_Member_Model.Mname,' ', tbl_Member_Model.Lname,' ', tbl_Member_Model.Suffix) as Fullname,  
+tbl_Member_Model.Fname, tbl_Member_Model.Lname, tbl_Member_Model.Mname, tbl_Member_Model.Suffix, tbl_Member_Model.Age, tbl_Member_Model.Barangay, tbl_Member_Model.City, tbl_Member_Model.Civil_Status, 
+                         tbl_Member_Model.Cno, tbl_Member_Model.DOB, tbl_Member_Model.Country, tbl_Member_Model.EmailAddress, tbl_Member_Model.Gender, tbl_Member_Model.HouseNo, tbl_Member_Model.POB, 
+                         tbl_Member_Model.Province, tbl_Member_Model.YearsStay, tbl_Member_Model.ZipCode, tbl_Member_Model.DateCreated, tbl_Member_Model.MemId, tbl_HouseStatus_Model.Description AS House_Stats, 
+                         tbl_Status_Model.Name AS MemberStatus, tbl_MonthlyBills_Model.ElectricBill, tbl_MonthlyBills_Model.WaterBill, tbl_MonthlyBills_Model.OtherBills, tbl_MonthlyBills_Model.DailyExpenses, tbl_JobInfo_Model.Emp_Status, 
+                         tbl_JobInfo_Model.BO_Status, tbl_JobInfo_Model.OtherSOC, tbl_JobInfo_Model.MonthlySalary, tbl_JobInfo_Model.CompanyName,tbl_JobInfo_Model.CompanyAddress, tbl_JobInfo_Model.YOS, tbl_JobInfo_Model.JobDescription, 
+                         tbl_FamBackground_Model.Fname AS Fam_Fname, tbl_FamBackground_Model.Mname AS Fam_Mname, tbl_FamBackground_Model.Lname AS Fam_Lname, tbl_FamBackground_Model.Suffix AS Fam_Suffix, 
+                         tbl_FamBackground_Model.DOB AS Fam_DOB, tbl_FamBackground_Model.Age AS Fam_Age, tbl_FamBackground_Model.Emp_Status AS Fam_EmpStatus, tbl_FamBackground_Model.Position, 
+                         tbl_FamBackground_Model.YOS AS Fam_YOS, tbl_FamBackground_Model.CmpId AS Fam_CompanyName, tbl_FamBackground_Model.NOD AS Fam_NOD, tbl_FamBackground_Model.RTTB AS Fam_RTTB, 
+                         tbl_FamBackground_Model.FamId, tbl_CoMaker_Model.Fname AS Co_Fname, 
+                         tbl_CoMaker_Model.Mname AS Co_Mname, tbl_CoMaker_Model.Lnam, tbl_CoMaker_Model.Suffi AS Co_Suffix, tbl_CoMaker_Model.Gender AS Co_Gender, tbl_CoMaker_Model.DOB AS Co_DOB, 
+                         tbl_CoMaker_Model.Age AS Co_Age, tbl_CoMaker_Model.POB AS Co_POB, tbl_CoMaker_Model.CivilStatus, tbl_CoMaker_Model.Cno AS Co_Cno, tbl_CoMaker_Model.EmailAddress AS Co_EmailAddress, 
+                                                  tbl_HouseStatus_Model_1.Description AS Co_House_Stats, tbl_CoMaker_Model.HouseNo AS Co_HouseNo, tbl_CoMaker_Model.Barangay AS Co_Barangay, tbl_CoMaker_Model.City AS Co_City, tbl_CoMaker_Model.Region, 
+						 tbl_CoMaker_Model.Country AS Co_Country, tbl_CoMaker_Model.ZipCode AS Co_ZipCode, tbl_CoMaker_Model.YearsStay AS Co_YOS, tbl_CoMaker_Model.RTTB AS Co_RTTB, tbl_CoMaker_Model.CMID, 
+                         tbl_CoMaker_JobInfo_Model.JobDescription AS Co_JobDescription, tbl_CoMaker_JobInfo_Model.YOS AS Coj_YOS, tbl_CoMaker_JobInfo_Model.CompanyName AS Co_CompanyName, 
+                         tbl_CoMaker_JobInfo_Model.MonthlySalary AS Co_MonthlySalary, tbl_CoMaker_JobInfo_Model.Emp_Status AS Co_Emp_Status, tbl_CoMaker_JobInfo_Model.OtherSOC AS Co_OtherSOC, 
+                         tbl_CoMaker_JobInfo_Model.BO_Status AS Co_BO_Status, tbl_Status_Model.Name as Status, tbl_Application_Model.Status as ApplicationStatus, tbl_HouseStatus_Model.Id AS HouseStatusId, tbl_HouseStatus_Model_1.Id AS Co_HouseStatusId,tbl_Application_Model.NAID,tbl_LoanDetails_Model.TermsOfPayment , tbl_LoanDetails_Model.Purpose,tbl_CoMaker_JobInfo_Model.CompanyAddress as Co_CompanyAddress
+				
+
+FROM           tbl_Member_Model left join
+						                     tbl_LoanDetails_Model on tbl_LoanDetails_Model.MemId = tbl_Member_Model.MemId left join
+						                     tbl_Application_Model on tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID left join
+                         tbl_HouseStatus_Model ON tbl_Member_Model.House_Stats = tbl_HouseStatus_Model.Id LEFT OUTER JOIN
+                         tbl_Status_Model AS tbl_Status_Model_1 ON tbl_Member_Model.Status = tbl_Status_Model_1.Id LEFT OUTER JOIN
+                         tbl_MonthlyBills_Model ON tbl_Member_Model.MemId = tbl_MonthlyBills_Model.MemId LEFT OUTER JOIN
+                         tbl_JobInfo_Model ON tbl_Member_Model.MemId = tbl_JobInfo_Model.MemId LEFT OUTER JOIN
+                         tbl_FamBackground_Model ON tbl_Member_Model.MemId = tbl_FamBackground_Model.MemId LEFT OUTER JOIN
+                         tbl_CoMaker_Model LEFT OUTER JOIN
+                         tbl_HouseStatus_Model AS tbl_HouseStatus_Model_1 ON tbl_CoMaker_Model.House_Stats = tbl_HouseStatus_Model_1.Id LEFT OUTER JOIN
+                         tbl_CoMaker_JobInfo_Model ON tbl_CoMaker_Model.CMID = tbl_CoMaker_JobInfo_Model.CMID LEFT OUTER JOIN
+                         tbl_Status_Model ON tbl_CoMaker_JobInfo_Model.Emp_Status = tbl_Status_Model.Id ON tbl_Member_Model.MemId = tbl_CoMaker_Model.MemId
+                         where  (tbl_Member_Model.Status = 1) " + w_column + "   ";
+                var result = new List<MemberModelVM>();
                 DataTable table = db.SelectDb(sql).Tables[0];
-
                 foreach (DataRow dr in table.Rows)
                 {
-                    var item = new MemberVM();
-                    var datec = dr["DateCreated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateCreated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
-                    var dateu = dr["DateUpdated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateUpdated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
 
-                    item.Id = int.Parse(dr["id"].ToString());
+                    var datec = dr["DateCreated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateCreated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+                    var dob = dr["DOB"].ToString() == "" ? "" : Convert.ToDateTime(dr["DOB"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+                    string BOstatus = dr["BO_Status"].ToString() == "true" ? "1" : dr["BO_Status"].ToString();
+                    var item = new MemberModelVM();
+                    item.Fullname = dr["Fullname"].ToString();
                     item.Fname = dr["Fname"].ToString();
                     item.Lname = dr["Lname"].ToString();
                     item.Mname = dr["Mname"].ToString();
@@ -1371,25 +1482,283 @@ FROM            tbl_Member_Model INNER JOIN
                     item.Barangay = dr["Barangay"].ToString();
                     item.City = dr["City"].ToString();
                     item.Civil_Status = dr["Civil_Status"].ToString();
+                    item.Cno = dr["Cno"].ToString();
+                    item.House_Stats = dr["House_Stats"].ToString();
+
+                    item.HouseStatus_Id = dr["HouseStatusId"].ToString();
                     item.Country = dr["Country"].ToString();
-                    item.DOB = dr["DOB"].ToString();
+                    item.DOB = dob;
                     item.EmailAddress = dr["EmailAddress"].ToString();
                     item.Gender = dr["Gender"].ToString();
                     item.HouseNo = dr["HouseNo"].ToString();
-                    item.House_Stats = dr["HouseStatus"].ToString();
-                    item.HouseStatus_Id = dr["HouseStatus_Id"].ToString();
-                    item.CompanyAddress = dr["CompanyAddress"].ToString();
-                    item.CompanyName = dr["CompanyName"].ToString();
-                    item.JobDescription = dr["JobDescription"].ToString();
-                    item.YearsStay = dr["YearsStay"].ToString();
-                    item.Province = dr["Province"].ToString();
-                    item.ZipCode = dr["ZipCode"].ToString();
-                    item.Status = dr["status"].ToString();
                     item.POB = dr["POB"].ToString();
-                    item.Cno = dr["Cno"].ToString();
+                    item.Province = dr["Province"].ToString();
+                    item.MemId = dr["MemId"].ToString();
+                    item.Status = dr["MemberStatus"].ToString();
                     item.DateCreated = datec;
-                    item.DateUpdated = dateu;
-                    item.ProfilePath = dr["ProfilePath"].ToString();
+                    item.YearsStay = dr["YearsStay"].ToString();
+                    item.ZipCode = dr["ZipCode"].ToString();
+                    item.ElectricBill = dr["ElectricBill"].ToString();
+                    item.WaterBill = dr["WaterBill"].ToString();
+                    item.ElectricBill = dr["ElectricBill"].ToString();
+                    item.OtherBills = dr["OtherBills"].ToString();
+                    item.DailyExpenses = dr["DailyExpenses"].ToString();
+                    item.Emp_Status = dr["Emp_Status"].ToString();
+                    item.BO_Status = BOstatus;
+                    item.OtherSOC = dr["OtherSOC"].ToString();
+                    item.MonthlySalary = dr["MonthlySalary"].ToString();
+                    item.CompanyName = dr["CompanyName"].ToString();
+                    item.YOS = dr["YOS"].ToString();
+                    item.JobDescription = dr["JobDescription"].ToString();
+                    var famnod = dr["Fam_NOD"].ToString() == "" ? "0" : dr["Fam_NOD"].ToString();
+                    var F_YOS = dr["Fam_YOS"].ToString() == "" ? "0" : dr["Fam_YOS"].ToString();
+                    var F_Age = dr["Fam_Age"].ToString() == "" ? "0" : dr["Fam_Age"].ToString();
+                    var F_Emp_Status = dr["Fam_EmpStatus"].ToString() == "" ? "0" : dr["Fam_EmpStatus"].ToString();
+                    var F_DOB = dr["Fam_DOB"].ToString() == "" ? "" : Convert.ToDateTime(dr["Fam_DOB"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+                    item.F_Fname = dr["Fam_Fname"].ToString();
+                    item.F_Lname = dr["Fam_Lname"].ToString();
+                    item.F_Mname = dr["Fam_Mname"].ToString();
+                    item.F_Suffix = dr["Fam_Suffix"].ToString();
+                    item.F_RTTB = dr["Fam_RTTB"].ToString();
+                    item.F_NOD = famnod.ToString();
+                    item.F_CompanyName = dr["Fam_CompanyName"].ToString();
+                    item.F_YOS = F_YOS;
+                    item.F_Job = dr["Position"].ToString();
+                    item.F_Emp_Status = F_Emp_Status;
+                    item.F_Age = F_Age;
+                    item.F_DOB = F_DOB;
+                    item.FamId = dr["FamId"].ToString();
+                    item.ApplicationStatus = dr["ApplicationStatus"].ToString();
+
+                    string sql_child = $@"SELECT        Id, Fname, Mname, Lname, Age, NOS, FamId, Status, DateCreated, DateUpdated
+                            FROM            tbl_ChildInfo_Model
+                            WHERE        (FamId = '" + dr["FamId"].ToString() + "')";
+
+                    DataTable child_table = db.SelectDb(sql_child).Tables[0];
+                    var child_res = new List<ChildModel>();
+                    foreach (DataRow c_dr in child_table.Rows)
+                    {
+                        var items = new ChildModel();
+                        items.Fname = c_dr["Fname"].ToString();
+                        items.Lname = c_dr["Lname"].ToString();
+                        items.Mname = c_dr["Mname"].ToString();
+                        items.Age = int.Parse(c_dr["Age"].ToString());
+                        items.NOS = c_dr["NOS"].ToString();
+                        items.FamId = c_dr["FamId"].ToString();
+                        child_res.Add(items);
+
+                    }
+                    item.Child = child_res;
+                    //business
+                    string sql_business = $@"SELECT        tbl_BusinessInformation_Model.Id, tbl_BusinessInformation_Model.BusinessName, tbl_BusinessInformation_Model.BusinessAddress, tbl_BusinessInformation_Model.YOB, tbl_BusinessInformation_Model.NOE, 
+                         tbl_BusinessInformation_Model.Salary, tbl_BusinessInformation_Model.VOS, tbl_BusinessInformation_Model.AOS, tbl_BusinessInformation_Model.DateCreated, tbl_BusinessInformation_Model.DateUpdated, 
+                         tbl_BusinessInformation_Model.BIID, tbl_Status_Model.Name AS Business_Status, tbl_Status_Model_1.Name AS Status, tbl_BusinessInformation_Model.BusinessType,tbl_BusinessInformation_Model.B_status AS B_statusID,tbl_BusinessInformation_Model.FilesUploaded
+
+                        FROM            tbl_BusinessInformation_Model INNER JOIN
+                                                 tbl_Status_Model ON tbl_BusinessInformation_Model.B_status = tbl_Status_Model.Id INNER JOIN
+                         tbl_Status_Model AS tbl_Status_Model_1 ON tbl_BusinessInformation_Model.Status = tbl_Status_Model_1.Id
+                                        WHERE        (tbl_BusinessInformation_Model.MemId = '" + dr["MemId"].ToString() + "')";
+
+                    DataTable b_table = db.SelectDb(sql_business).Tables[0];
+                    var b_res = new List<BusinessModelVM>();
+                    foreach (DataRow b_dr in b_table.Rows)
+                    {
+                        var b_item = new BusinessModelVM();
+                        b_item.BusinessName = b_dr["BusinessName"].ToString();
+                        b_item.BusinessType = b_dr["BusinessType"].ToString();
+                        b_item.BusinessAddress = b_dr["BusinessAddress"].ToString();
+                        b_item.B_statusID = b_dr["B_statusID"].ToString();
+                        b_item.YOB = int.Parse(b_dr["YOB"].ToString());
+                        b_item.NOE = int.Parse(b_dr["NOE"].ToString());
+                        b_item.Salary = decimal.Parse(b_dr["Salary"].ToString());
+                        b_item.VOS = decimal.Parse(b_dr["VOS"].ToString());
+                        b_item.AOS = decimal.Parse(b_dr["AOS"].ToString());
+                        var b_files = new List<FileModel>();
+                        b_item.B_status = b_dr["Business_Status"].ToString();
+                        if (b_dr["FilesUploaded"].ToString() != null)
+                        {
+                            if (b_dr["FilesUploaded"].ToString().Contains("|"))
+                            {
+                                var files = b_dr["FilesUploaded"].ToString().Split('|');
+                                string files_ = "";
+
+                                for (int x = 0; x < files.ToList().Count; x++)
+                                {
+                                    var items = new FileModel();
+                                    items.FilePath = files[x];
+                                    b_files.Add(items);
+                                }
+                            }
+                            else
+                            {
+                                var items = new FileModel();
+                                items.FilePath = b_dr["FilesUploaded"].ToString();
+                                b_files.Add(items);
+                            }
+
+
+                        }
+                        b_item.BusinessFiles = b_files;
+                        b_res.Add(b_item);
+                    }
+
+                    string sql_assets = $@"WITH RankedItems AS (SELECT 
+                                        ROW_NUMBER()   OVER(PARTITION BY MotorVehicles ORDER BY
+                                        tbl_LoanDetails_Model.MemId) AS RowNum  ,MotorVehicles,tbl_LoanDetails_Model.MemId
+                                        FROM            tbl_AssetsProperties_Model inner join tbl_LoanDetails_Model on
+                                        tbl_AssetsProperties_Model.MemId = tbl_LoanDetails_Model.MemId inner join
+                                        tbl_Application_Model on tbl_LoanDetails_Model.MemId = tbl_Application_Model.MemId
+                                        ) SELECT * FROM RankedItems  R1 WHERE RowNum <2 AND MemId='"+ dr["MemId"].ToString() + "'" +
+                                        " and NOT EXISTS ( SELECT 1 FROM RankedItems R2 WHERE R1.MemId = R2.MemId AND R2.RowNum < 1) ";
+
+                    DataTable assets_table = db.SelectDb(sql_assets).Tables[0];
+                    var assest_res = new List<AssetsModel>();
+                    foreach (DataRow b_dr in assets_table.Rows)
+                    {
+                        var assets_item = new AssetsModel();
+                        assets_item.MotorVehicles = b_dr["MotorVehicles"].ToString();
+                        assest_res.Add(assets_item);
+                    }
+
+                    //Property
+                    string sql_property = $@"SELECT     Property  FROM   tbl_Property_Model
+                                        WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
+
+                    DataTable property_table = db.SelectDb(sql_property).Tables[0];
+                    var property_res = new List<PropertyDetailsModel>();
+                    foreach (DataRow b_dr in property_table.Rows)
+                    {
+                        var property_item = new PropertyDetailsModel();
+                        property_item.Property = b_dr["Property"].ToString();
+                        property_res.Add(property_item);
+                    }
+
+                    string sql_bank = $@"SELECT        BankName, Address, DateCreated, DateUpdated, BankID, Status, MemId
+                                        FROM            tbl_BankAccounts_Model
+                                        WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
+
+                    DataTable bank_table = db.SelectDb(sql_bank).Tables[0];
+                    var bank_res = new List<BankModel>();
+                    foreach (DataRow b_dr in bank_table.Rows)
+                    {
+                        var bank_item = new BankModel();
+                        bank_item.BankName = b_dr["BankName"].ToString();
+                        bank_item.Address = b_dr["Address"].ToString();
+                        bank_res.Add(bank_item);
+                    }
+                    string sql_appliances = $@"WITH RankedItems AS (SELECT 
+                                        ROW_NUMBER()   OVER(PARTITION BY tbl_Appliance_Model.Brand ORDER BY
+                                        tbl_Member_Model.MemId) AS RowNum  ,tbl_Appliance_Model.Brand,tbl_Appliance_Model.Description, tbl_Appliance_Model.NAID,tbl_Member_Model.MemId
+                                        FROM     tbl_Application_Model INNER JOIN
+                                        tbl_Member_Model ON tbl_Application_Model.MemId = tbl_Member_Model.MemId INNER JOIN
+                                        tbl_Appliance_Model ON tbl_Application_Model.NAID = tbl_Appliance_Model.NAID   
+                                        ) SELECT * FROM RankedItems  R1 WHERE RowNum <2 AND MemId='"+ dr["MemId"].ToString() + "' " +
+                                        "and NOT EXISTS ( SELECT 1 FROM RankedItems R2 WHERE R1.MemId = R2.MemId AND R2.RowNum < 1) ";
+
+                    DataTable appliances_table = db.SelectDb(sql_appliances).Tables[0];
+                    var appliances_res = new List<ApplianceModel>();
+                    foreach (DataRow b_dr in appliances_table.Rows)
+                    {
+                        var appliances_item = new ApplianceModel();
+                        appliances_item.Appliances = b_dr["Description"].ToString();
+                        appliances_item.Brand = b_dr["Brand"].ToString();
+                        appliances_item.NAID = b_dr["NAID"].ToString();
+                        appliances_res.Add(appliances_item);
+                    }
+                    //files
+
+                    string sql_files = $@"SELECT        tbl_fileupload_Model.MemId, tbl_fileupload_Model.FileName, tbl_fileupload_Model.FilePath, tbl_TypesModel.TypeName, tbl_Status_Model.Name AS Status
+                         FROM            tbl_fileupload_Model INNER JOIN
+                         tbl_TypesModel ON tbl_fileupload_Model.Type = tbl_TypesModel.Id INNER JOIN
+                         tbl_Status_Model ON tbl_fileupload_Model.Status = tbl_Status_Model.Id
+                                        WHERE        (tbl_fileupload_Model.MemId = '" + dr["MemId"].ToString() + "')";
+
+                    DataTable file_table = db.SelectDb(sql_files).Tables[0];
+                    var file_res = new List<FileModel>();
+                    if (file_table.Rows.Count != 0)
+                    {
+                        foreach (DataRow b_dr in file_table.Rows)
+                        {
+                            var file_item = new FileModel();
+                            file_item.FileName = b_dr["FileName"].ToString();
+                            file_item.FilePath = b_dr["FilePath"].ToString();
+                            file_item.FileType = b_dr["TypeName"].ToString();
+                            file_res.Add(file_item);
+                        }
+                    }
+                    item.Files = file_res;
+                    item.ProfilePath = file_table.Rows[0]["FilePath"].ToString();
+                    item.Property = property_res;
+                    item.Appliances = appliances_res;
+                    item.Bank = bank_res;
+                    item.Assets = assest_res;
+                    item.Business = b_res;
+                    //item.LoanAmount = decimal.Parse(dr["LoanAmount"].ToString());
+                    //var amount = dr["LoanAmount"].ToString() == "" ? "0.00" : dr["LoanAmount"].ToString();
+                    // item.LoanAmount = decimal.Parse(amount);
+                    //var grouploan = GetGroupApplicationList().Where(a => a.NAID == ApplicationId).ToList();
+                    
+                    //}
+                    //item.GroupLoan = group;
+                    //item.IndividualLoan = individual_;
+                    item.TermsOfPayment = dr["TermsOfPayment"].ToString();
+                    item.Purpose = dr["Purpose"].ToString();
+                    item.Co_Fname = dr["Co_Fname"].ToString();
+                    item.Co_Mname = dr["Co_Mname"].ToString();
+                    item.Co_Lname = dr["Lnam"].ToString();
+                    item.Co_Suffix = dr["Co_Suffix"].ToString();
+                    item.Co_Gender = dr["Co_Gender"].ToString();
+                    var co_dob = dr["Co_DOB"].ToString() == "" ? "0.00" : Convert.ToDateTime(dr["Co_DOB"].ToString()).ToString("yyyy-MM-dd");
+                    item.Co_DOB = co_dob;
+
+                    item.Co_POB = dr["Co_POB"].ToString();
+                    item.Co_Age = dr["Co_Age"].ToString();
+                    item.Co_Cno = dr["Co_Cno"].ToString();
+                    item.Co_Civil_Status = dr["CivilStatus"].ToString();
+                    item.Co_EmailAddress = dr["Co_EmailAddress"].ToString();
+                    item.Co_HouseNo = dr["Co_HouseNo"].ToString();
+                    item.Co_Barangay = dr["Co_Barangay"].ToString();
+                    item.Co_City = dr["Co_City"].ToString();
+                    item.Co_Province = dr["Region"].ToString();
+                    item.Co_Country = dr["Co_Country"].ToString();
+                    item.Co_ZipCode = dr["Co_ZipCode"].ToString();
+                    item.Co_YearsStay = dr["Co_YOS"].ToString();
+                    item.Co_RTTB = dr["Co_RTTB"].ToString();
+                    item.CMID = dr["CMID"].ToString();
+                    item.Co_JobDescription = dr["Co_JobDescription"].ToString();
+                    item.Coj_YOS = dr["Coj_YOS"].ToString();
+                    item.Co_CompanyName = dr["Co_CompanyName"].ToString();
+                    item.Co_CompanyAddress = dr["Co_CompanyAddress"].ToString();
+                    item.Co_MonthlySalary = dr["Co_MonthlySalary"].ToString();
+                    item.Co_OtherSOC = dr["Co_OtherSOC"].ToString();
+                    item.Co_Emp_Status = dr["Co_Emp_Status"].ToString();
+                    item.Co_BO_Status = dr["Co_BO_Status"].ToString();
+                    item.Co_House_Stats = dr["Co_House_Stats"].ToString();
+                    item.CompanyAddress = dr["CompanyAddress"].ToString();
+                    item.Co_CompanyAddress = dr["Co_CompanyAddress"].ToString();
+
+                    item.Co_HouseStatusId = dr["Co_HouseStatusId"].ToString();
+
+                    string co_sql_files = $@"SELECT        tbl_CoMakerFileUpload_Model.Id, tbl_CoMakerFileUpload_Model.CMID, tbl_CoMakerFileUpload_Model.FileName, tbl_CoMakerFileUpload_Model.FilePath, tbl_CoMakerFileUpload_Model.DateCreated, 
+                         tbl_TypesModel.TypeName, tbl_CoMakerFileUpload_Model.Status
+                            FROM            tbl_CoMakerFileUpload_Model INNER JOIN
+                         tbl_TypesModel ON tbl_CoMakerFileUpload_Model.Status = tbl_TypesModel.Id
+                                        WHERE        (tbl_CoMakerFileUpload_Model.CMID = '" + dr["CMID"].ToString() + "')";
+
+                    DataTable co_file_table = db.SelectDb(co_sql_files).Tables[0];
+                    var co_file_res = new List<FileModel>();
+                    if (co_file_table.Rows.Count != 0)
+                    {
+                        foreach (DataRow b_dr in co_file_table.Rows)
+                        {
+                            var file_item = new FileModel();
+                            file_item.FileName = b_dr["FileName"].ToString();
+                            file_item.FilePath = b_dr["FilePath"].ToString();
+                            file_item.FileType = b_dr["TypeName"].ToString();
+                            co_file_res.Add(file_item);
+                        }
+                    }
+                    item.Co_Files = co_file_res;
                     result.Add(item);
                 }
 
@@ -1684,7 +2053,7 @@ FROM            tbl_Member_Model INNER JOIN
                                 where  tbl_Application_Model.Status in (8,9,10)
                                 and tbl_Member_Model.Fname ='" + data[0].Fname + "' and tbl_Member_Model.Mname ='" + data[0].Mname + "'" +
                                 "and  tbl_Member_Model.Lname ='" + data[0].Lname + "' and tbl_Member_Model.POB ='" + data[0].POB + "'" +
-                                "and tbl_Member_Model.Barangay = '" + data[0].Barangay + "' and tbl_Member_Model.Status = 1 ";
+                                "and tbl_Member_Model.Barangay = '" + data[0].Barangay + "' and tbl_Member_Model.Status <> 0 ";
                 DataTable tbl_applicationfilter = db.SelectDb(applicationfilter).Tables[0];
                 if (tbl_applicationfilter.Rows.Count != 0)
                 {

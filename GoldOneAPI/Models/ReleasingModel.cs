@@ -23,6 +23,6 @@ namespace AuthSystem.Models
         public string? CourierCno { get; set; }
         public string? ModeOfRelease { get; set; }
         public string? ModeOfReleaseReference { get; set; }
-        public decimal? TotalSavingsUsed { get; set; }
+        public decimal? totalSavingsUsed { get; set; }
     }
 }

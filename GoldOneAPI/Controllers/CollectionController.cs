@@ -292,6 +292,7 @@ namespace GoldOneAPI.Controllers
             public string? CollectionRef { get; set; }
             public string? Area_RefNo { get; set; }
         }
+        
         public class ColAreaVM
         {
             public string? AreaId { get; set; }
@@ -377,13 +378,13 @@ namespace GoldOneAPI.Controllers
             {
                 if (showprev != null)
                 {
-                    if (showprev == true)
+                    if (showprev == false)
                     {
                         return Ok(dbmet.ShowArea().ToList());
                     }
                     else
                     {
-                        return Ok(dbmet.ShowArea().ToList().OrderByDescending(a=>a.DateCreated).FirstOrDefault());
+                        return Ok(dbmet.ShowArea().Where(a=> Convert.ToDateTime(a.DateCreated)  >= DateTime.Now.AddDays(-7)).ToList().OrderByDescending(a=>a.DateCreated));
                     }
                 }
                 else
@@ -807,7 +808,21 @@ GROUP BY tbl_CollectionArea_Model.Area_RefNo, tbl_CollectionArea_Model.Collectio
                          "WHERE AreaID = '" + data.AreaID + "' and Area_RefNo = '"+data.AreaRefno+"'";
                 result = db.AUIDB_WithParam(Update) + " Updated";
 
+                string colarea = $@"SELECT  tbl_LoanHistory_Model.NAID,tbl_LoanHistory_Model.[LoanAmount]
+                                 FROM [dbo].[tbl_Collection_AreaMember_Model] inner JOIN
+                                tbl_LoanHistory_Model on tbl_LoanHistory_Model.NAID = tbl_Collection_AreaMember_Model.NAID
+                                where Area_RefNo ='" +data.AreaRefno+"' and  AreaID = '" + data.AreaID + "'";
+                DataTable tbl_colarea = db.SelectDb(colarea).Tables[0];
+                foreach (DataRow dr in tbl_colarea.Rows)
+                {
 
+                    string Update_history = $@"
+                                        UPDATE [dbo].[tbl_LoanHistory_Model]
+                                           SET [OutstandingBalance] = '
+                                        " + dr["LoanAmount"].ToString()+ "' " +
+                                       "where NAID = '" + dr["NAId"].ToString()+ "'";
+                    db.AUIDB_WithParam(Update_history);
+                }
                 string username = $@"SELECT  Fname,Lname,Mname,UserId FROM [dbo].[tbl_User_Model] where Status=1";
                 DataTable username_tbl = db.SelectDb(username).Tables[0];
                 foreach (DataRow dr in username_tbl.Rows)
@@ -945,11 +960,20 @@ GROUP BY tbl_CollectionArea_Model.Area_RefNo, tbl_CollectionArea_Model.Collectio
                     DataTable sql_loanhistory_tbl = db.SelectDb(sql_loanhistory).Tables[0];
                   
                     double total_outstanding_bal = Math.Abs (double.Parse(data.AmountCollected.ToString()) - double.Parse(sql_loanhistory_tbl.Rows[0]["OutstandingBalance"].ToString()));
+                    //make application Inactive update when the outstanding balance becomes 0
+
                     string Update_history = $@"
                                         UPDATE [dbo].[tbl_LoanHistory_Model]
                                            SET [OutstandingBalance] = '" + total_outstanding_bal + "' " +
                                           "where MemId = '" + memid.MemId + "'";
                     db.AUIDB_WithParam(Update_history);
+                    if (total_outstanding_bal <= 0)
+                    {
+                        string updatecomaker = "";
+                       updatecomaker += $@"update tbl_CoMaker_Model set [Status] =2 where MemId='"+memid.MemId+"'";
+                        updatecomaker += $@"update tbl_Member_Model set [Status] =2 where MemId='" + memid.MemId + "'";
+                        db.AUIDB_WithParam(updatecomaker);
+                    }
                     if (tables.Rows.Count != 0)
                     {
                         //update

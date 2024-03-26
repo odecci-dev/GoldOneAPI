@@ -355,22 +355,33 @@ namespace GoldOneAPI.Controllers
         {
             try
             {
-                sql = $@"select * from tbl_Application_Model where NAID ='" + data.NAID + "'";
+                sql = $@"select tbl_Member_Model.MemId from tbl_Application_Model inner join 
+                tbl_Member_Model on tbl_Member_Model.MemId = tbl_Application_Model.MemId where NAID ='" + data.NAID + "'";
                 DataTable dt = db.SelectDb(sql).Tables[0];
                 var result = new DeleteModel();
+                string results = "";
                 if (dt.Rows.Count != 0)
                 {
-
-                    //string OTPInsert = $@"delete table tbl_Application_Model " +
-                    //                "where NAID='" + data.NAID + "'";
-                    string OTPInsert = $@"UPDATE [dbo].[tbl_Application_Model]
+                    string sql1 = $@"select * from tbl_Member_Model where MemId ='" + dt.Rows[0]["MemId"].ToString() + "' ";
+                    DataTable dt2 = db.SelectDb(sql).Tables[0];
+                    if (dt2.Rows.Count != 0)
+                    {
+                        //string OTPInsert = $@"delete table tbl_Application_Model " +
+                        //                "where NAID='" + data.NAID + "'";
+                        string OTPInsert = $@"UPDATE [dbo].[tbl_Application_Model]
                                SET [Status] = '7' " +
-                            "where NAID='" + data.NAID + "'";
-                    db.AUIDB_WithParam(OTPInsert);
-                    results = "Successfully Deleted";
+                                "where NAID='" + data.NAID + "' and MemId='"+ dt.Rows[0]["MemId"].ToString() + "' and Status = 0";
+                        db.AUIDB_WithParam(OTPInsert);
+                        string member = $@"UPDATE [dbo].[tbl_Member_Model]
+                               SET [Status] = '2' " +
+                              "where MemId='" + dt.Rows[0]["MemId"].ToString() + "'";
+                        db.AUIDB_WithParam(member);
+                        results = "Successfully Deleted";
+                       
+                    }
+
+
                     return Ok(results);
-
-
                 }
                 else
                 {

@@ -255,9 +255,9 @@ namespace GoldOneAPI.Controllers
             try
             {
                 string Insert = "";
-                string filePath = @"C:\data\Add_new_holiday.json"; // Replace with your desired file path
+                //string filePath = @"C:\data\Add_new_holiday.json"; // Replace with your desired file path
 
-                dbmet.insertlgos(filePath, JsonSerializer.Serialize(data));
+                //dbmet.insertlgos(filePath, JsonSerializer.Serialize(data));
                 string areafilter = $@"SELECT [Id]
                                   ,[Area]
                                   ,[City]
@@ -273,7 +273,7 @@ namespace GoldOneAPI.Controllers
                                         "'" + data.Location + "')";
                     results = db.AUIDB_WithParam(insert_area) + " Added";
                 }
-                sql = $@"select * from tbl_Holiday_Model where HolidayName ='" + data.HolidayName + "' ";
+                sql = $@"select * from tbl_Holiday_Model where HolidayName ='" + data.HolidayName + "' and Status  = 1";
                 DataTable table1 = db.SelectDb(sql).Tables[0];
                 if (table1.Rows.Count == 0)
                 {

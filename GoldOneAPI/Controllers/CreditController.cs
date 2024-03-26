@@ -123,7 +123,7 @@ namespace GoldOneAPI.Controllers
             //var result = new List<CreditModel>();
             try
             {
-                result = dbmet.getLoanhistoryAll().Where(a => a.NAID == naid).ToList();
+                result = dbmet.getLoanhistoryAll().Where(a => a.NAID == naid).OrderByDescending(a=>a.DateCollected).ToList();
 
                 return Ok(result);
             }
@@ -237,12 +237,6 @@ namespace GoldOneAPI.Controllers
                             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), "Credit Investigation Module", name, dr["UserId"].ToString(), "2",data.NAID);
                     }
                     return Ok(results);
-
-                    //string username = $@"SELECT  Fname,Lname,Mname FROM [dbo].[tbl_User_Model] where UserId = '" + data.UserId + "'";
-                    //DataTable username_tbl = db.SelectDb(username).Tables[0];
-                    //string name = username_tbl.Rows[0]["Fname"].ToString() + " " + username_tbl.Rows[0]["Mname"].ToString() + " " + username_tbl.Rows[0]["Lname"].ToString();
-                    //dbmet.InsertNotification("Approved Application For Credit Investigation  " + data.NAID + "",
-                    //      DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), "Credit Investigation Module", name, "2");
 
                   
 

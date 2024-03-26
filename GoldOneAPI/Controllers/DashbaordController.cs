@@ -14,6 +14,12 @@ using Microsoft.VisualBasic;
 using static GoldOneAPI.Controllers.CollectionController;
 using Newtonsoft.Json;
 using System.Globalization;
+using System.Collections.Generic;
+using System.Collections;
+using Newtonsoft.Json.Linq;
+using static GoldOneAPI.Controllers.FieldAreaController;
+using System.Runtime.ConstrainedExecution;
+using System.Linq;
 
 namespace GoldOneAPI.Controllers
 {
@@ -53,11 +59,33 @@ namespace GoldOneAPI.Controllers
             public double? TotalPercentOfLastEntry { get; set; }
             public int? TargetStatus { get; set; }
             public int ActiveMember { get; set; }
-            public List<TotalLapsesArea>? TotalLapsesArea { get; set; }
-            public List<TopCollectiblesArea>? TopCollectiblesAreas { get; set; }
+            public List<TotalLapsesArea2>? TotalLapsesArea { get; set; }
+            public List<TopCollectiblesArea2>? TopCollectiblesAreas { get; set; }
             public List<AreaActiveCollection>? AreaActiveCollection { get; set; }
 
 
+
+        }
+        public class TopCollectiblesArea2
+        {
+
+            public string? AreaName { get; set; }
+            public string? AreaID { get; set; }
+            public double? Amount { get; set; }
+            public double? DailyCollectibles { get; set; }
+            public int? SundayCount { get; set; }
+            public int? HolidayCount { get; set; }
+
+        }
+        public class LapsesDaily
+        {
+
+            public string? AreaName { get; set; }
+            public string? AreaID { get; set; }
+            public double? Amount { get; set; }
+            public double? DailyLapses { get; set; }
+            public int? SundayCount { get; set; }
+            public int? HolidayCount { get; set; }
 
         }
         public class TopCollectiblesArea
@@ -75,6 +103,13 @@ namespace GoldOneAPI.Controllers
             public string? AreaID { get; set; }
             public double? Amount { get; set; }
 
+        } public class TotalLapsesArea2
+        {
+
+            public string? AreaName { get; set; }
+            public string? AreaID { get; set; }
+            public double? Amount { get; set; }
+
         }
         public class ActiveMemberVM
         {
@@ -83,6 +118,12 @@ namespace GoldOneAPI.Controllers
             public string? AreaID { get; set; }
             public string? DateCreated { get; set; }
 
+        }
+        public class TotalLapses
+        {
+            public string? AreaId { get; set; }
+            public string? AreaName { get; set; }
+            public double? TotalLapsesPayment { get; set; }
         }
         public class TopMembersPenalty //top3
         {
@@ -96,9 +137,11 @@ namespace GoldOneAPI.Controllers
         }
         public class AreaActiveCollection //top3
         {
+            public string? AreaId { get; set; }
             public string? Area { get; set; }
             public double? ActiveCollection { get; set; }
             public int? NewAccount { get; set; }
+            public string? MemId { get; set; }
             public int? NoPayment { get; set; }
             public double? PastDueCollection { get; set; }
 
@@ -170,7 +213,7 @@ namespace GoldOneAPI.Controllers
             int total = 0;
             int total_count = 0;
             int daysLeft = new DateTime(DateTime.Now.Year, 12, 31).DayOfYear - DateTime.Now.DayOfYear;
-            int day = days == 0 ? 334 : days;
+            int day = days == 1 ? 334 : days;
             string datecreated = "";
             int count_ = 0;
             var result = new List<ActiveMember>();
@@ -182,90 +225,130 @@ namespace GoldOneAPI.Controllers
             var items = new List<monthsdate>();
             var mo = JsonConvert.SerializeObject(months);
             var list = JsonConvert.DeserializeObject<List<monthsdate>>(mo);
-
+           
             string sqls = $@"select Count(*) as count from tbl_Member_Model where status=1";
             DataTable dts = db.SelectDb(sqls).Tables[0];
             try
             {
-                if (days == 0 && category == null)
+
+                string sqlarea = $@"select  * from tbl_Area_Model where status=1 and Area ='"+category+"'";
+                DataTable sqlarea_dtl = db.SelectDb(sqls).Tables[0];
+                if (sqlarea_dtl.Rows.Count != 0)
                 {
-                    for (int i = 0; i < list.Count; i++)
+                    string sql1 = "";
+                    string areas = "";
+                    if (days == 1)
                     {
-                        string query = "";
 
-
-                        var item = new ActiveMember();
-                        string sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1   and DATENAME(month,DateCreated) = '" + list[i].label + "'  group by   DATENAME(month,DateCreated)   ";
-                        //string sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1 and DATENAME(month,DateCreated) = '" + list[i].label + "' and  tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'    group by   DATENAME(month,DateCreated)   ";
-                        DataTable dt1 = db.SelectDb(sql1).Tables[0];
-                        query += sql1;
-
-                        if (dt1.Rows.Count != 0)
+                        for (int i = 0; i < list.Count; i++)
                         {
-                            datecreated = dt1.Rows[0]["month"].ToString();
-                            total_count = int.Parse(dt1.Rows[0]["count"].ToString());
-
-                        }
-                        else
-                        {
-
-                            datecreated = list[i].label;
-                            total_count = 0;
-                        }
-
-
-
-                        item.AreaName = "ALL AREAS";
-                        item.count = total_count;
-                        item.Date = datecreated;
-                        result.Add(item);
-
-
-
-
-                    }
-                }
-                else if (category != null)
-                {
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        string query = "";
-                        string areafilter = $@"SELECT  tbl_Area_Model.Id, tbl_Area_Model.Area,tbl_Area_Model.City from tbl_Area_Model where Status=1 and Area='"+category+"'";
-                        DataTable area_table = db.SelectDb(areafilter).Tables[0];
-                        foreach (DataRow dr_area in area_table.Rows)
-                        {
-                            var item = new ActiveMember();
-                            var area_city = dr_area["City"].ToString().ToLower().Split("|").ToList();
-                            for (int x = 0; x < area_city.Count; x++)
+                            string query = "";
+                            if (category == null)
                             {
-                                var spliter = area_city[x].Split(",");
-                                string barangay = spliter[0];
-                                string city = spliter[1];
-
-                                string sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1 and DATENAME(month,DateCreated) = '" + list[i].label + "' and  tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'    group by   DATENAME(month,DateCreated)   ";
-                                DataTable dt1 = db.SelectDb(sql1).Tables[0];
-                                query += sql1;
-
-                                if (dt1.Rows.Count != 0)
-                                {
-                                    datecreated = dt1.Rows[0]["month"].ToString();
-                                    total_count = int.Parse(dt1.Rows[0]["count"].ToString());
-                                }
-
+                                sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1   and DATENAME(month,DateCreated) = '" + list[i].label + "'  group by   DATENAME(month,DateCreated)   ";
+                                areas = "ALL AREAS";
 
                             }
-                            string sql = $@"SELECT count(*) as count
-                         FROM  tbl_Member_Model
-                         WHERE DateCreated >= DATEADD(day,-" + day + ", GETDATE()) and status= 1";
-                            DataTable dt = db.SelectDb(sql).Tables[0];
+                            else
+                            {
 
+                                sql1 = $@"select DATENAME(month,tbl_Member_Model.DateCreated)  AS month , count(*) as count ,tbl_Area_Model.Area  from tbl_Application_Model inner join
+                                tbl_LoanDetails_Model on tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID inner join
+                                tbl_Member_Model on tbl_Member_Model.MemId = tbl_LoanDetails_Model.MemId inner join
+                                tbl_Area_Model on tbl_Area_Model.City LIKE '%' + tbl_Member_Model.City + '%'
+                                where tbl_Member_Model.status = 1  and  DATENAME(month,tbl_Member_Model.DateCreated) = '" + list[i].label + "' and tbl_Area_Model.Area ='" + category + "'  group by   DATENAME(month,tbl_Member_Model.DateCreated) ,tbl_Area_Model.Area   ";
+                                areas = category;
+                            }
+
+                            var item = new ActiveMember();
+                            //string sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1 and DATENAME(month,DateCreated) = '" + list[i].label + "' and  tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'    group by   DATENAME(month,DateCreated)   ";
+                            DataTable dt1 = db.SelectDb(sql1).Tables[0];
+                            query += sql1;
+
+                            if (dt1.Rows.Count != 0)
+                            {
+                                datecreated = dt1.Rows[0]["month"].ToString();
+                                total_count = int.Parse(dt1.Rows[0]["count"].ToString());
+
+                            }
+                            else
+                            {
+
+                                datecreated = list[i].label;
+                                total_count = 0;
+                            }
+
+
+
+                            item.AreaName = areas;
+                            item.count = total_count;
+                            item.Date = datecreated;
+                            result.Add(item);
+
+
+
+
+                        }
+                    }
+                    else
+                    {
+                        List<DateTime> allDates = new List<DateTime>();
+
+                        for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+                        {
+                            var dategen = date.Date.ToString("yyyy-MM-dd");
+
+                            if (category == null)
+                            {
+                                sql1 = $@"select  CONVERT(VARCHAR, tbl_Member_Model.DateCreated, 23)  as DateCreated , Count(*) as count from tbl_Member_Model 
+                        where tbl_Member_Model.status = 1  and CONVERT(VARCHAR, tbl_Member_Model.DateCreated, 23)='" + dategen + "'  group by CONVERT(VARCHAR, tbl_Member_Model.DateCreated, 23) order by  CONVERT(VARCHAR, tbl_Member_Model.DateCreated, 23)   ";
+                                areas = "ALL AREAS";
+
+                            }
+                            else
+                            {
+
+                                sql1 = $@"select  CONVERT(VARCHAR, tbl_Member_Model.DateCreated, 23) as DateCreated ,Count(*) as count ,tbl_Area_Model.Area  from tbl_Application_Model inner join
+                        tbl_LoanDetails_Model on tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID inner join
+                        tbl_Member_Model on tbl_Member_Model.MemId = tbl_LoanDetails_Model.MemId inner join
+                        tbl_Area_Model on tbl_Area_Model.City LIKE '%' + tbl_Member_Model.City + '%'
+                        where tbl_Member_Model.status = 1  and CONVERT(VARCHAR, tbl_Member_Model.DateCreated, 23)='" + dategen + "'    and tbl_Area_Model.Area='" + category + "'  group by tbl_Member_Model.DateCreated,tbl_Area_Model.Area order by  tbl_Member_Model.DateCreated   ";
+                                areas = category;
+                            }
+                            DataTable dt1 = db.SelectDb(sql1).Tables[0];
+                            if (dt1.Rows.Count == 0)
+                            {
+                                datecreated = dategen;
+                                total_count = 0;
+                            }
+                            else
+                            {
+                                foreach (DataRow dr in dt1.Rows)
+                                {
+                                    datecreated = dr["DateCreated"].ToString();
+                                    total_count = int.Parse(dr["count"].ToString());
+                                }
+                            }
+
+
+                            //    }
+
+
+
+
+                            //}
+                            string sql = $@"SELECT count(*) as count
+                                         FROM  tbl_Member_Model
+                                         WHERE DateCreated >= DATEADD(day,-" + day + ", GETDATE()) and status= 1";
+                            DataTable dt = db.SelectDb(sql).Tables[0];
+                            var item = new ActiveMember();
                             if (dt.Rows.Count > 0)
                             {
                                 foreach (DataRow dr in dt.Rows)
                                 {
                                     count_ += total_count;
                                     item.count = total_count;
-                                    item.AreaName = dr_area["Area"].ToString();
+                                    item.AreaName = areas;
 
                                     item.Date = datecreated;
                                     result.Add(item);
@@ -279,11 +362,12 @@ namespace GoldOneAPI.Controllers
                                 return BadRequest("ERROR");
                             }
 
-
-
                         }
-
                     }
+                }
+                else
+                {
+                    return BadRequest("No Data Found");
                 }
             }
 
@@ -293,158 +377,102 @@ namespace GoldOneAPI.Controllers
             }
             return Ok(result);
         }
-        //    [HttpGet]
-        //public async Task<IActionResult> ActiveMemberFilterbyDays(int days,string? category)
-        //{
-        //    //var memberlist = dbmet.GetAllMemberList().Where(a => a.STATUS != "Inactive" && a.STATUS != "New Application").ToList();
-        //    //var date = DateTime.Now.AddDays(days);
-        //    //var activemembercount = memberlist.Where(a => Convert.ToDateTime(a.DateCreated) >= DateTime.Now.AddDays(-days)).ToList();
-        //    //return Ok(activemembercount.Count);
+        [HttpGet]
+        public async Task<IActionResult> ActiveCollection()
+        {
+            var day_total = dbmet.dashdatecomputation();
+            DataTable table = db.SelectDb_SP("sp_fieldareas").Tables[0];
+            var result = new List<AreaActiveCollection>();
+            int mem = 0;
+            
+            foreach (DataRow dr in table.Rows)
+            {
+                var no_payment = dbmet.GetActiveCollectionMemberDashboard(int.Parse(day_total.totaldays), dr["AreaID"].ToString()).FirstOrDefault();
+                var no_payments = dbmet.GetActiveCollectionMemberDashboard(int.Parse(day_total.totaldays), dr["AreaID"].ToString()).Select(a => a.NoPayment).FirstOrDefault();
+                var dailyCollectiblesSum = dbmet.getAreaLoanSummary_2(dr["AreaID"].ToString(), "").Select(a => double.Parse(a.DailyCollectibles)).Sum();
+                var pastdue = dbmet.GetActiveCollectionDashboard(int.Parse(day_total.totaldays), dr["AreaID"].ToString()).Where(a => a.AreaId == dr["AreaID"].ToString()).Select(a => a.PastDueCollection).Sum();
+                var count_mem = dbmet.GetActiveCollectionMemberDashboard(int.Parse(day_total.totaldays), dr["AreaID"].ToString()).GroupBy(x=>x).Select(group => new { group.Key, Counter = group.Count() });
+                foreach (var item in count_mem)
+                {
+                    if (item.Counter == 1)
+                    {
+                        var mem_res = item.Key;
+                        mem++;
+                    }
 
-        //    int total = 0;
-        //    int daysLeft = new DateTime(DateTime.Now.Year, 12, 31).DayOfYear - DateTime.Now.DayOfYear;
-        //    int day = days == 1 ? 334 : days;
-        //    string datecreated = "";
-        //    int count_ = 0;
-        //    var result = new List<ActiveMember>();
-        //    try
-        //    {
-        //        string sqls = $@"select Count(*) as count from tbl_Member_Model where status=1";
-        //        DataTable dts = db.SelectDb(sqls).Tables[0];
+                
+                }
+                double collectedamount_total = dailyCollectiblesSum * double.Parse(day_total.totaldays);
+                var items = new AreaActiveCollection();
+                items.AreaId = dr["AreaID"].ToString();
+                items.Area = dr["AreaName"].ToString();
+                items.NewAccount = mem;
+                items.NoPayment = no_payment == null ? 0 : no_payment.NoPayment;
+                items.PastDueCollection = no_payment == null ? 0 : no_payment.PastDueCollection;;
+                items.ActiveCollection = collectedamount_total;
+                result.Add(items);
+                mem = 0;
 
-        //        foreach (DataRow dr in dts.Rows)
-        //        {
-        //            total = int.Parse(dr["count"].ToString());
-        //        }
+            }
 
-        //        DateTime startDate = Convert.ToDateTime(DateTime.Now.ToString("yyyy-MM-dd")).AddDays(-day);
+                return Ok(result);
+        }
+        [HttpGet]
+        public async Task<IActionResult> TopCollectibles()
+        {
+            var day_total = dbmet.dashdatecomputation();
 
-        //        DateTime endDate = DateTime.Parse(DateTime.Now.ToString("yyyy-MM-dd"));
+            DataTable table = db.SelectDb_SP("sp_fieldareas").Tables[0];
+            var result = new List<AreaVM>();
+                var collect_res2 = new List<TopCollectiblesArea2>();
 
-        //        var months = MonthsBetween(startDate, endDate).ToList();
-        //        var items = new List<monthsdate>();
-        //        var mo = JsonConvert.SerializeObject(months);
-        //        var list = JsonConvert.DeserializeObject<List<monthsdate>>(mo);
-        //        if (days == 1)
-        //        {
-        //            for (int x = 0; x < list.Count; x++)
-        //            {
-        //                //var item = new monthsdate();
-        //                //var month = list[x].label;
-        //                //item.label = month;
-        //                //items.Add(item);
-        //                string sql1 = $@"SELECT  DATENAME(month,DateCreated)  AS month , count(*) as count from tbl_Member_Model where status = 1 and DATENAME(month,DateCreated) = '" + list[x].label + "'   group by   DATENAME(month,DateCreated)   ";
-        //                DataTable dt1 = db.SelectDb(sql1).Tables[0];
+            foreach (DataRow dr in table.Rows)
+            {
+                var dailyCollectiblesSum = dbmet.getAreaLoanSummary_2(dr["AreaID"].ToString(), "").Select(a => double.Parse(a.DailyCollectibles)).Sum();
+                if (dailyCollectiblesSum != 0)
+                    {
+                        double collectedamount_total = dailyCollectiblesSum * double.Parse(day_total.totaldays);
+                        var items = new TopCollectiblesArea2();
+                        items.Amount = collectedamount_total;
+                        items.AreaName = dr["AreaName"].ToString();
+                    items.DailyCollectibles = dailyCollectiblesSum;
+                    items.SundayCount = int.Parse(day_total.sundaycount);
+                    items.HolidayCount = int.Parse(day_total.ctr_holiday);
+                        items.AreaID = dr["AreaID"].ToString();
+                    collect_res2.Add(items);
+                    }
+                }
 
+           
+            return Ok(collect_res2);
+        }
 
-        //                if (dt1.Rows.Count == 0)
-        //                {
-        //                    datecreated = list[x].label;
-        //                    count_ = 0;
-        //                }
-        //                else
-        //                {
-        //                    foreach (DataRow dr in dt1.Rows)
-        //                    {
-        //                        datecreated = dr["month"].ToString();
-        //                        count_ = int.Parse(dr["count"].ToString());
-        //                    }
-        //                }
+        [HttpGet]
+        public async Task<IActionResult> TotalLapsesAreas()
+        {
+            var day_total = dbmet.dashdatecomputation();
 
-        //                string sql = $@"SELECT count(*) as count
-        //                 FROM  tbl_Member_Model
-        //                 WHERE DateCreated >= DATEADD(day,-" + day + ", GETDATE()) and status= 1";
-        //                DataTable dt = db.SelectDb(sql).Tables[0];
-        //                var item = new ActiveMember();
-        //                if (dt.Rows.Count > 0)
-        //                {
-        //                    foreach (DataRow dr in dt.Rows)
-        //                    {
-        //                        double val1 = double.Parse(dr["count"].ToString());
-        //                        double val2 = double.Parse(total.ToString());
-
-        //                        double results = Math.Abs(val1 / val2 * 100);
-        //                        item.count = int.Parse(dr["count"].ToString());
-        //                        item.Date = datecreated;
-        //                        result.Add(item);
-
-        //                    }
-
-
-        //                }
-        //                else
-        //                {
-        //                    return BadRequest("ERROR");
-        //                }
-
-        //            }
-
-        //        }
-        //        else
-        //        {
-        //            string query = $@"select Count(*) as count from tbl_Member_Model where status=1";
-        //            DataTable dtble = db.SelectDb(query).Tables[0];
-
-        //            foreach (DataRow dr in dtble.Rows)
-        //            {
-        //                total = int.Parse(dr["count"].ToString());
-        //            }
-        //            List<DateTime> allDates = new List<DateTime>();
-
-        //            for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
-        //            {
-        //                //allDates.Add(date.Date);
-        //                var dategen = date.Date.ToString("yyyy-MM-dd");
-
-        //                string sql1 = $@"select DateCreated,Count(*) as count from tbl_Member_Model where status = 1 and DateCreated='" + dategen + "' group by DateCreated order by  DateCreated ";
-        //                DataTable dt1 = db.SelectDb(sql1).Tables[0];
+            var list = dbmet.GetTotalLapses().ToList();
+            var collect_res2 = new List<LapsesDaily>();
+            for (int x= 0;x < list.Count;x++)
+            {
+                 if (list[x].TotalLapsesPayment != 0)
+                {
+                    double collectedamount_total = double.Parse(list[x].TotalLapsesPayment.ToString()) * double.Parse(day_total.totaldays);
+                    var items = new LapsesDaily();
+                    items.Amount = collectedamount_total;
+                    items.AreaName = list[x].AreaName;
+                    items.DailyLapses = list[x].TotalLapsesPayment;
+                    items.SundayCount = int.Parse(day_total.sundaycount);
+                    items.HolidayCount = int.Parse(day_total.ctr_holiday);
+                    items.AreaID = list[x].AreaId;
+                    collect_res2.Add(items);
+                }
+            }
 
 
-        //                if (dt1.Rows.Count == 0)
-        //                {
-        //                    datecreated = dategen;
-        //                    count_ = 0;
-        //                }
-        //                else
-        //                {
-        //                    foreach (DataRow dr in dt1.Rows)
-        //                    {
-        //                        datecreated = dr["DateCreated"].ToString();
-        //                        count_ = int.Parse(dr["count"].ToString());
-        //                    }
-        //                }
-
-
-        //                string sql = $@"SELECT count(*) as count
-        //                 FROM  tbl_Member_Model
-        //                 WHERE DateCreated >= DATEADD(day,-" + day + ", GETDATE()) and status= 1";
-        //                DataTable dt = db.SelectDb(sql).Tables[0];
-
-        //                double val1 = double.Parse(dt.Rows[0]["count"].ToString());
-        //                var item = new ActiveMember();
-
-        //                double val2 = double.Parse(total.ToString());
-
-        //                double results = Math.Abs(val1 / val2 * 100);
-
-
-        //                item.Date = DateTime.Parse(datecreated).ToString("dd");
-        //                item.count = count_;
-        //                item.AreaName = "ALL AREAS";
-        //                result.Add(item);
-        //            }
-
-        //        }
-
-
-        //        return Ok(result);
-        //    }
-
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest("ERROR");
-        //    }
-        //}
+            return Ok(collect_res2);
+        }
         [HttpGet]
         public async Task<IActionResult> DashboaredView()
         {
@@ -455,24 +483,25 @@ namespace GoldOneAPI.Controllers
                 var result = new List<DashboardVM>();
                 var memberlist = dbmet.GetAllMemberList().Where(a=>a.STATUS != "Inactive" && a.STATUS != "New Application").ToList();
                 var memberlist_daily = dbmet.GetAllMemberList_daily().Where(a=>a.STATUS != "Inactive" && a.STATUS != "New Application").ToList();
-
+            
+                var getdailyreset = dbmet.GetSettingList().FirstOrDefault();
+                int day = int.Parse(getdailyreset.DisplayReset) == 1 ? 30 : 334;
                 string sql_loanbal = $@"select 
                                         sum(OutstandingBalance) as LoanBalance
                                         from 
-                                        tbl_LoanHistory_Model
-                                         ";
+                                        tbl_LoanHistory_Model where tbl_LoanHistory_Model.DateCreated >= DATEADD(day,-" + day + ", GETDATE())";
                 DataTable tbl_loanbal = db.SelectDb(sql_loanbal).Tables[0];
 
                 string sql_interest = $@"select 
                                         sum(ApproveedInterest) as TotalInterest
                                         from 
-                                        tbl_LoanDetails_Model";
+                                        tbl_LoanDetails_Model where DateCreated >= DATEADD(day,-" + day + ", GETDATE()) and status= 1";
                 DataTable tbl_interest = db.SelectDb(sql_interest).Tables[0];
 
                 string sql_notary = $@"select 
                                         sum(ApprovedNotarialFee) as TotalNotarial
                                         from 
-                                        tbl_LoanDetails_Model";
+                                        tbl_LoanDetails_Model where DateCreated >= DATEADD(day,-" + day + ", GETDATE()) and status= 1";
                 DataTable tbl_notary = db.SelectDb(sql_notary).Tables[0];
 
      
@@ -480,7 +509,7 @@ namespace GoldOneAPI.Controllers
                 string sql_loancollection = $@"select 
                                         sum(ApprovedDailyAmountDue) as TotalCollection
                                         from 
-                                        tbl_LoanDetails_Model";
+                                        tbl_LoanDetails_Model where DateCreated >= DATEADD(day,-" + day + ", GETDATE()) and status= 1";
                 DataTable tbl_collection = db.SelectDb(sql_loancollection).Tables[0];
 
                 //ApprovedAdvancePayment
@@ -488,19 +517,19 @@ namespace GoldOneAPI.Controllers
                 string sql_advancepayment = $@"select 
                                         sum(ApprovedAdvancePayment) as TotalAdvancePayment
                                         from 
-                                        tbl_LoanDetails_Model";
+                                        tbl_LoanDetails_Model where DateCreated >= DATEADD(day,-" + day + ", GETDATE()) and status= 1";
                 DataTable tbl_advancepayment = db.SelectDb(sql_advancepayment).Tables[0];
 
                 string sql_savingsoutstanding = $@"select 
                                         sum(TotalSavingsAmount) as TotalSavings
                                         from 
-                                        tbl_MemberSavings_Model";
+                                        tbl_MemberSavings_Model ";
                 DataTable tbl_savings = db.SelectDb(sql_savingsoutstanding).Tables[0];
 
                 string sql_newacccounts = $@"SELECT tbl_Application_Model.NAID
                                         FROM tbl_Application_Model INNER JOIN
                                         tbl_Member_Model ON tbl_Application_Model.MemId = tbl_Member_Model.MemId
-                                        where tbl_Application_Model.NAID = '7'";
+                                        where tbl_Application_Model.status = '7'";
                 DataTable tbl_newaccount = db.SelectDb(sql_newacccounts).Tables[0];
 
 
@@ -533,9 +562,10 @@ namespace GoldOneAPI.Controllers
                 var lifeinsurance = dbmet.getAreaLoanSummary().Select(a => double.Parse(a.LifeInsurance)).Sum();
                 var loaninsurance = dbmet.getAreaLoanSummary().Select(a => double.Parse(a.LoanInsurance)).Sum();
                 var totalincome = dbmet.GetSettingList().Select(a => a.MonthlyTarget).FirstOrDefault();
-                var activemembercount = memberlist.Where(a => Convert.ToDateTime(a.DateCreated) >= DateTime.Now.AddDays(-7)).ToList();
+ 
+                var activemembercount = dbmet.GetActiveMember(day).ToList();
                 var item = new DashboardVM();
-                item.ActiveMemberCount = memberlist.Count;
+                item.ActiveMemberCount = activemembercount.Count;
                 item.TotalLoanBalance = Math.Ceiling(double.Parse(tbl_loanbal.Rows[0]["LoanBalance"].ToString() == "" ? "0" : tbl_loanbal.Rows[0]["LoanBalance"].ToString()));
                 item.TotalInterest = Math.Ceiling(double.Parse(tbl_interest.Rows[0]["TotalInterest"].ToString() == "" ? "0" : tbl_interest.Rows[0]["TotalInterest"].ToString()));
                 item.TotalLoanCollection = Math.Ceiling(double.Parse(tbl_collection.Rows[0]["TotalCollection"].ToString() == "" ? "0" : tbl_collection.Rows[0]["TotalCollection"].ToString()));
@@ -549,67 +579,101 @@ namespace GoldOneAPI.Controllers
                 item.TotalCR = tbl_cr.Rows.Count;
                 item.TotalIncome = double.Parse(totalincome);
                 item.ActiveMember = activemembercount.Count;
-                item.TotalDailyCollection = double.Parse(tbl_collectedamount_daily.Rows[0]["totalcollected"].ToString() == null ? "0" : tbl_collectedamount_daily.Rows[0]["totalcollected"].ToString());
-                item.TotalIncomePercentage = double.Parse(tbl_collectedamount_daily.Rows[0]["totalcollected"].ToString() == null ? "0" : tbl_collectedamount_daily.Rows[0]["totalcollected"].ToString()) /   double.Parse(totalincome) * 100;
+                item.TotalDailyCollection = double.Parse(tbl_collectedamount_daily.Rows[0]["totalcollected"].ToString() == "" ? "0" : tbl_collectedamount_daily.Rows[0]["totalcollected"].ToString());
+                item.TotalIncomePercentage = double.Parse(tbl_collectedamount_daily.Rows[0]["totalcollected"].ToString() == "" ? "0" : tbl_collectedamount_daily.Rows[0]["totalcollected"].ToString()) /   double.Parse(totalincome) * 100;
 
            
                 item.TotalOtherDeductions = Math.Ceiling(double.Parse(tbl_interest.Rows[0]["TotalInterest"].ToString() == "" ? "0" : tbl_interest.Rows[0]["TotalInterest"].ToString()) + double.Parse(loaninsurance.ToString()) + double.Parse(lifeinsurance.ToString()) + double.Parse(tbl_notary.Rows[0]["TotalNotarial"].ToString() == "" ?  "0" : tbl_notary.Rows[0]["TotalNotarial"].ToString()));
-                var areas = dbmet.CollectionGroupby().ToList();
-                var printed_area = dbmet.Collection_PrintedResult().ToList();
-                var raw_list = dbmet.Collection_NotPrintedResult().ToList();
-                //IEnumerable<AreaDetailsVM> notInListB = printed_area.Except(raw_list);
-                var list1 = raw_list.Where(p2 => !areas.Any(p1 => p1.AreaID == p2.AreaID)).ToList();
-                double collectedamount = 0;
-                // Concatenate the result with listB to get the desired list.
-                //List<AreaDetailsVM> resultList = 
-                //List<CollectionPrintedVM> resultList = dbmet.Collection_PrintedResult().ToList();
-                List<CollectionPrintedVM> resultList = areas.Concat(list1).ToList();
-                var collect_res = new List<TopCollectiblesArea>();
-                string t_colamount = "";
-                for (int x = 0; x < resultList.Count; x++)
-                {
-                    var items = new TopCollectiblesArea();
-                    t_colamount = resultList[x].Total_collectedAmount.ToString() == "" ? "0": resultList[x].Total_collectedAmount.ToString();
-                    items.Amount =  Math.Ceiling(double.Parse(resultList[x].Total_collectedAmount.ToString()));
-                    items.AreaName = resultList[x].AreaName;
-                    items.AreaID = resultList[x].AreaID;
+                //var areas = dbmet.CollectionGroupby().ToList();
+                //var printed_area = dbmet.Collection_PrintedResult().ToList();
+                //var raw_list = dbmet.Collection_NotPrintedResult().ToList();
+                ////IEnumerable<AreaDetailsVM> notInListB = printed_area.Except(raw_list);
+                //var list1 = raw_list.Where(p2 => !areas.Any(p1 => p1.AreaID == p2.AreaID)).ToList();
+                //double collectedamount = 0;
+                //// Concatenate the result with listB to get the desired list.
+                ////List<AreaDetailsVM> resultList = 
+                ////List<CollectionPrintedVM> resultList = dbmet.Collection_PrintedResult().ToList();
+                //List<CollectionPrintedVM> resultList = areas.Concat(list1).ToList();
+                //var collect_res = new List<TopCollectiblesArea>();
+                //var collect_res2 = new List<TopCollectiblesArea2>();
+                ////string t_colamount = "";
+                ////for (int x = 0; x < resultList.Count; x++)
+                ////{
+                ////    var items = new TopCollectiblesArea();
+                ////    t_colamount = resultList[x].Total_collectedAmount.ToString() == "" ? "0" : resultList[x].Total_collectedAmount.ToString();
+                ////    items.Amount = Math.Ceiling(double.Parse(resultList[x].Total_collectedAmount.ToString()));
+                ////    items.AreaName = resultList[x].AreaName;
+                ////    items.AreaID = resultList[x].AreaID;
+                ////    collect_res.Add(items);
+
+                ////}
+                //var lapses2 = new List<TotalLapsesArea2>();
+                ////var lapses = new List<TotalLapsesArea>();
+                ////for (int x = 0; x < resultList.Count; x++)
+                ////{
+                ////    var items = new TotalLapsesArea();
+
+                ////    items.Amount = Math.Ceiling(double.Parse(resultList[x].Total_lapses.ToString()));
+                ////    items.AreaName = resultList[x].AreaName;
+                ////    items.AreaID = resultList[x].AreaID;
 
 
-                    collect_res.Add(items);
+                ////    lapses.Add(items);
 
-                }
-                var lapses = new List<TotalLapsesArea>();
-                for (int x = 0; x < resultList.Count; x++)
-                {
-                    var items = new TotalLapsesArea();
- 
-                    items.Amount = Math.Ceiling(double.Parse(resultList[x].Total_lapses.ToString()));
-                    items.AreaName = resultList[x].AreaName;
-                    items.AreaID = resultList[x].AreaID;
+                ////}
 
 
-                    lapses.Add(items);
-
-                }
-                var activecol = new List<AreaActiveCollection>();
-                //for (int x = 0; x < resultList.Count; x++)
+                //var col_res_group = resultList.GroupBy(a => new { a.AreaID, a.AreaName }).ToList();
+                //var col_res_grouplist = dbmet.Collection_PrintedResult().ToList();
+                //foreach (var group in col_res_group)
                 //{
-                    var _items = new AreaActiveCollection();
+                //    var Total_collectedAmount = resultList.Where(a => a.AreaName == group.Key.AreaName).Select(a => a.Total_collectedAmount).Sum();
+                //    //var savings = list.Where(a => a.RefNo == group.Key.RefNo && a.Savings != "").Select(a => double.Parse(a.Savings)).Sum();
+                //    if (Total_collectedAmount != 0)
+                //    {
+                //        var items = new TopCollectiblesArea2();
+                //        //t_colamount =  //resultList[x].Total_collectedAmount.ToString() == "" ? "0" : resultList[x].Total_collectedAmount.ToString();
+                //        items.Amount = Total_collectedAmount;//Math.Ceiling(double.Parse(resultList[x].Total_collectedAmount.ToString()));
+                //        items.AreaName = group.Key.AreaName;
+                //        items.AreaID = group.Key.AreaID;
+                //        collect_res2.Add(items);
+                //    }
+                //}
 
-                    _items.Area = "";
-                    _items.ActiveCollection = 0;
-                    _items.NewAccount = 0;
-                    _items.NoPayment = 0;
-                    _items.PastDueCollection = 0;
+                //foreach (var group in col_res_group)
+                //{
+                //    var Total_lapses = resultList.Where(a => a.AreaName == group.Key.AreaName).Select(a => a.Total_lapses).Sum();
+                //    if (Total_lapses != 0)
+                //    {
+
+                //        var items = new TotalLapsesArea2();
+                //        items.Amount = Total_lapses;
+                //        items.AreaName = group.Key.AreaName;
+                //        items.AreaID = group.Key.AreaID;
 
 
-                    activecol.Add(_items);
+                //        lapses2.Add(items);
+                //    }
+                //}
+                //var activecol = new List<AreaActiveCollection>();
+                ////for (int x = 0; x < resultList.Count; x++)
+                ////{
+                //    //var _items = new AreaActiveCollection();
+
+                //    //_items.Area = "";
+                //    //_items.ActiveCollection = 0;
+                //    //_items.NewAccount = 0;
+                //    //_items.NoPayment = 0;
+                //    //_items.PastDueCollection = 0;
+
+
+                //    activecol.Add(_items);
 
                 //}
                 //AreaActiveCollection
-                item.AreaActiveCollection = activecol;
-                item.TotalLapsesArea = lapses;
-                item.TopCollectiblesAreas = collect_res;
+                //item.AreaActiveCollection = activecol;
+                //item.TotalLapsesArea = lapses2;
+                //item.TopCollectiblesAreas = collect_res2;
 
                 result.Add(item);
 

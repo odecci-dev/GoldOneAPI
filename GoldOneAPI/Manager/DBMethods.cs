@@ -1,12 +1,17 @@
-﻿using System.Data;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Text;
 using AuthSystem.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
 using static GoldOneAPI.Controllers.ApplicationController;
 using static GoldOneAPI.Controllers.ApprovalController;
 using static GoldOneAPI.Controllers.CollectionController;
 using static GoldOneAPI.Controllers.CreditController;
+using static GoldOneAPI.Controllers.DashbaordController;
 using static GoldOneAPI.Controllers.FieldAreaController;
 using static GoldOneAPI.Controllers.FieldOfficerController;
 using static GoldOneAPI.Controllers.GroupController;
@@ -150,18 +155,50 @@ namespace GoldOneAPI.Manager
 
             return result;
         }
+        public List<TotalLapses> GetTotalLapses()
+        {
+            string applicationfilter = $@"select tbl_CollectionArea_Model.AreaId,tbl_Area_Model.Area as AreaName, sum(tbl_Collection_AreaMember_Model.LapsePayment) as TotalLapses from tbl_CollectionArea_Model inner JOIN
+                                        tbl_Collection_AreaMember_Model on tbl_Collection_AreaMember_Model.Area_RefNo = tbl_CollectionArea_Model.Area_RefNo inner join 
+                                        tbl_Area_Model on tbl_Area_Model.AreaId = tbl_CollectionArea_Model.AreaId where tbl_Area_Model.[Status] = 1
+                                        group by tbl_CollectionArea_Model.AreaId,tbl_Area_Model.Area";
+            DataTable tbl_applicationfilter = db.SelectDb(applicationfilter).Tables[0];
+            var result = new List<TotalLapses>();
+            foreach (DataRow dr in tbl_applicationfilter.Rows)
+            {
+                var item = new TotalLapses();
+                item.AreaId = dr["AreaId"].ToString();
+                item.AreaName = dr["AreaName"].ToString();
+                item.TotalLapsesPayment = double.Parse(dr["TotalLapses"].ToString());
+
+                
+                result.Add(item);
+            }
+
+
+            return result;
+        }
         public List<MemberDisplay> GetMemberDisplay()
         {
-            string applicationfilter = $@"SELECT  tbl_Member_Model.Fname, tbl_Member_Model.Lname, tbl_Member_Model.Mname, tbl_Member_Model.Suffix, tbl_Status_Model.Name AS Status, tbl_Status_Model.Id AS StausId, tbl_Member_Model.MemId, 
+            string applicationfilter = $@"WITH RankedItems AS (SELECT  ROW_NUMBER() OVER(PARTITION BY Fname ORDER BY Lname) AS RowNum,  tbl_Member_Model.Fname, tbl_Member_Model.Lname,tbl_Member_Model.Mname, tbl_Member_Model.Suffix, tbl_Status_Model.Name AS Status, tbl_Status_Model.Id AS StausId, tbl_Member_Model.MemId, 
                          tbl_LoanDetails_Model.LoanAmount, tbl_LoanHistory_Model.OutstandingBalance, tbl_Member_Model.DateUpdated,tbl_Application_Model.NAID,tbl_fileupload_Model.FilePath
-						 ,profiles.TypeName
-                         FROM            tbl_Application_Model INNER JOIN
-						 tbl_LoanDetails_Model on tbl_Application_Model.NAID = tbl_LoanDetails_Model.NAID inner join
-						 tbl_Member_Model on tbl_Application_Model.MemId = tbl_Member_Model.MemId inner join 
+						 ,profiles.TypeName,tbl_Application_Model.DateCreated
+                         FROM      tbl_Member_Model left join
+						 tbl_LoanDetails_Model on tbl_LoanDetails_Model.MemId = tbl_Member_Model.MemId left join
+						 tbl_Application_Model on tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID left join
                          tbl_Status_Model ON tbl_Member_Model.Status = tbl_Status_Model.Id left JOIN
-                         tbl_LoanHistory_Model ON tbl_Member_Model.MemId = tbl_LoanHistory_Model.MemId inner join
-						 tbl_fileupload_Model on tbl_Member_Model.MemId = tbl_fileupload_Model.MemId inner join 
-						 tbl_TypesModel as profiles  on tbl_fileupload_Model.Type = profiles.Id  where tbl_fileupload_Model.Type = 1";
+                         tbl_LoanHistory_Model ON tbl_Application_Model.NAID = tbl_LoanHistory_Model.NAID left join
+						 tbl_fileupload_Model on tbl_Member_Model.MemId = tbl_fileupload_Model.MemId left join 
+						 tbl_TypesModel as profiles  on tbl_fileupload_Model.Type = profiles.Id  where tbl_fileupload_Model.Type = 1 and  tbl_Member_Model.[Status] <> 0
+          )
+SELECT *
+FROM RankedItems  R1
+WHERE RowNum <2 AND NOT EXISTS (
+    SELECT 1
+    FROM RankedItems R2
+    WHERE R1.Fname = R2.Lname
+    AND R2.RowNum < 1
+)
+";
             DataTable tbl_applicationfilter = db.SelectDb(applicationfilter).Tables[0];
             var result = new List<MemberDisplay>();
             foreach (DataRow dr in tbl_applicationfilter.Rows)
@@ -169,12 +206,13 @@ namespace GoldOneAPI.Manager
                 var item = new MemberDisplay();
                 item.Borrower = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + ", " + dr["Mname"].ToString() + ", " + dr["Suffix"].ToString();
                 item.Status = dr["Status"].ToString();
-                item.CurrentLoan = dr["LoanAmount"].ToString();
+                item.CurrentLoan = dr["LoanAmount"].ToString() == "" ? "0" : dr["LoanAmount"].ToString(); ;
                 item.OutstandingBalance = dr["OutstandingBalance"].ToString() == "" ? "0" : dr["OutstandingBalance"].ToString();
                 item.LastUpdated = dr["DateUpdated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateUpdated"].ToString()).ToString("yyyy-MM-dd");
                 item.MemId = dr["MemId"].ToString();
                 item.Naid = dr["NAID"].ToString();
                 item.ProfilePath = dr["FilePath"].ToString();
+                item.DateCreated = dr["DateCreated"].ToString();
 
                 result.Add(item);
             }
@@ -542,9 +580,10 @@ FROM            tbl_Area_Model INNER JOIN
                                 item.AreaID = dr_area["AreaID"].ToString();
                                 item.Area_RefNo = Area_RefNo;
                                 item.CollectedAmount = dr["CollectedAmount"].ToString();
+                                item.FilePath = dr["FilePath"].ToString();
 
 
-                                collection_list.Add(item);
+                                    collection_list.Add(item);
                             }
                             items.Collection = collection_list;
                             res.Add(items);
@@ -578,6 +617,7 @@ FROM            tbl_Area_Model INNER JOIN
                                         item.AreaID = dr_area["AreaID"].ToString();
                                         item.Area_RefNo = Area_RefNo;
                                         item.CollectedAmount = dr["CollectedAmount"].ToString();
+                                        item.FilePath = dr["FilePath"].ToString();
 
 
                                         collection_list.Add(item);
@@ -665,7 +705,51 @@ FROM            tbl_Area_Model INNER JOIN
 
             return result;
         }
+        public List<AllMemberModel> GetActiveMember(int day)
+        {
 
+            var result = new List<AllMemberModel>();
+           
+            var param = new IDataParameter[]
+              {
+                        new SqlParameter("@day",day)
+              };
+            DataTable dt = db.SelectDb_SP("[sp_memberlistByDay]", param).Tables[0];
+            //DataTable dt = db.SelectDb_SP("sp_AllMemberList").Tables[0];
+
+            foreach (DataRow dr in dt.Rows)
+            {
+                var datec = dr["DateCreated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateCreated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+                var dateu = dr["DateUpdated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateUpdated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+                var item = new AllMemberModel();
+                item.MemId = dr["MemId"].ToString();
+                item.Member = dr["Fname"].ToString() + ", " + dr["Mname"].ToString() + ", " + dr["Lname"].ToString() + " " + dr["Suffix"].ToString();
+                item.Age = dr["Age"].ToString();
+                item.Barangay = dr["Barangay"].ToString();
+                item.City = dr["City"].ToString();
+                item.Civil_Status = dr["Civil_Status"].ToString();
+                item.Cno = dr["Cno"].ToString();
+                item.ZipCode = dr["ZipCode"].ToString();
+                item.Country = dr["Country"].ToString();
+                item.DOB = dr["DOB"].ToString();
+                item.EmailAddress = dr["EmailAddress"].ToString();
+                item.HouseNo = dr["HouseNo"].ToString();
+                item.HouseStatus = dr["HouseStatus"].ToString();
+                item.HouseStatusID = dr["HouseStatusID"].ToString();
+                item.POB = dr["POB"].ToString();
+                item.Province = dr["Province"].ToString();
+                item.YearsStay = dr["YearsStay"].ToString();
+                item.ZipCode = dr["ZipCode"].ToString();
+                //item.STATUS = dr["STATUS"].ToString();
+                //item.StatusID = dr["StatusID"].ToString();
+                item.DateCreated = datec;
+                item.DateUpdated = dateu;
+
+                result.Add(item);
+            }
+
+            return result;
+        }
         public List<AllMemberModel> GetAllMemberList_daily()
         {
 
@@ -1858,84 +1942,11 @@ FROM            tbl_Area_Model INNER JOIN
         public List<ApplicationVM> GetApplicationList()
         {
             var result = new List<ApplicationVM>();
-            string areafilter = $@"SELECT [Id]
-                              ,[Area]
-                              ,[City]
-                              ,[FOID]
-                              ,[Status]
-                              ,[DateCreated]
-                              ,[DateUpdated]
-                              ,[AreaID]
-                          FROM [dbo].[tbl_Area_Model]";
-            DataTable area_table = db.SelectDb(areafilter).Tables[0];
-            foreach (DataRow dr_area in area_table.Rows)
-            {
-                var area_city = dr_area["City"].ToString().ToLower().Split("|").ToList();
-                for (int x = 0; x < area_city.Count; x++)
-                {
-                    var spliter = area_city[x].Split(",");
-                    string barangay = spliter[0];
-                    var ct = spliter.Count().ToString();
-                    string city = ct == "1" ? "" : spliter[1];
+         
+
+                    DataTable dt = db.SelectDb_SP("GlobalFilterMember").Tables[0];
 
 
-                    string sql = $@" SELECT        tbl_Application_Model.Id, tbl_Application_Model.MemId, tbl_Application_Model.DateCreated, tbl_Application_Model.DateApproval, tbl_Application_Model.Remarks, tbl_Application_Model.NAID, tbl_Status_Model.Name AS Status, 
-                         tbl_LoanDetails_Model.LoanAmount, tbl_Member_Model.Cno AS BorrowerCno, tbl_CoMaker_Model.Cno AS Co_Cno, tbl_LoanType_Model.LoanTypeName, tbl_Member_Model.Cno AS BorrowerCno, 
-                         tbl_CoMaker_Model.Cno AS Co_Cno, tbl_Status_Model.Id AS StatusId, tbl_Application_Model.RefNo,  tbl_TermsOfPayment_Model.NameOfTerms AS TermsOfPayment, tbl_TermsOfPayment_Model.Days, 
-                         tbl_TermsOfPayment_Model.InterestRate, tbl_TermsOfPayment_Model.InterestType, tbl_LoanDetails_Model.LDID, tbl_Application_Model.CI_ApprovedBy, tbl_Application_Model.CI_ApprovalDate, 
-                         tbl_Application_Model.ReleasingDate, tbl_Application_Model.DeclineDate, tbl_Application_Model.DeclinedBy, tbl_Application_Model.App_ApprovedBy_1, tbl_Application_Model.App_ApprovalDate_1, 
-                         tbl_Application_Model.App_ApprovedBy_2, tbl_Application_Model.App_ApprovalDate_2, tbl_Application_Model.App_Note, tbl_Application_Model.App_Notedby, tbl_Application_Model.App_NotedDate, 
-                         tbl_Application_Model.CreatedBy, tbl_Application_Model.SubmittedBy, tbl_Application_Model.DateSubmitted, CI_ApprovedBy.Username as CI_ApprovedBy,
-						 CI_ApprovedBy.Username as CI_ApprovedBy,
-						 App_ApprovedBy_1.Username as App_ApprovedBy_1,
-						 App_ApprovedBy_2.Username as App_ApprovedBy_2,
-						 App_Notedby.Username as App_Notedby,
-						 CreatedBy.Username as CreatedBy,
-						 SubmittedBy.Username as SubmittedBy,
-                          ReleasedBy.Username as ReleasedBy,
-                          Concat(
-                        tbl_CoMaker_Model.Lnam  ,', ', 
-                        tbl_CoMaker_Model.Fname ,', ', 
-                        tbl_CoMaker_Model.Mname) CoBorrower,
-                        Concat(
-                        tbl_Member_Model.Lname,', ', 
-                        tbl_Member_Model.Fname,', ', 
-                        tbl_Member_Model.Mname) as Borrower,
-                        tbl_LoanDetails_Model.ModeOfRelease,
-                        tbl_LoanDetails_Model.ModeOfReleaseReference,
-                        tbl_LoanDetails_Model.Courerier,
-                        tbl_LoanDetails_Model.CourierCNo,
-                        tbl_LoanDetails_Model.CourerierName,
-                        tbl_LoanDetails_Model.Denomination,
-						tbl_LoanDetails_Model.LoanTypeID,
-						tbl_LoanType_Model.LoanTypeName,
-						tbl_LoanDetails_Model.ApprovedLoanAmount,
-						tbl_LoanDetails_Model.ApprovedTermsOfPayment,
-						tbl_TermsOfPayment_Model.Days,
-                        tbl_TermsOfPayment_Model.NameOfTerms,
-						Mem_Status.Name as Mem_status,
-                        file_.FilePath as ProfilePath,
-						tbl_LoanDetails_Model.GroupId,
-						tbl_Group_Model.GroupName
-from  tbl_Application_Model left join
-tbl_LoanDetails_Model on tbl_Application_Model.NAID = tbl_LoanDetails_Model.NAID left join
-tbl_Member_Model on tbl_Application_Model.MemId = tbl_Member_Model.MemId left join 
-tbl_Status_Model on tbl_Application_Model.Status = tbl_Status_Model.Id left join
-tbl_Status_Model as Mem_Status on Mem_Status.Id = tbl_Member_Model.Status left join
-tbl_LoanType_Model on tbl_LoanDetails_Model.LoanTypeID = tbl_LoanType_Model.LoanTypeID left join
-tbl_CoMaker_Model on tbl_Member_Model.MemId = tbl_CoMaker_Model.MemId left join
-tbl_TermsOfPayment_Model on tbl_TermsOfPayment_Model.TopId = tbl_LoanDetails_Model.TermsOfPayment left join
- tbl_User_Model as CI_ApprovedBy ON tbl_Application_Model.CI_ApprovedBy = CI_ApprovedBy.UserId left JOIN
-                          tbl_User_Model as App_ApprovedBy_1 ON tbl_Application_Model.App_ApprovedBy_1 = App_ApprovedBy_1.UserId left JOIN
-                           tbl_User_Model as App_ApprovedBy_2 ON tbl_Application_Model.App_ApprovedBy_2 = App_ApprovedBy_2.UserId left JOIN
-                            tbl_User_Model as App_Notedby ON tbl_Application_Model.App_Notedby = App_Notedby.UserId left JOIN
-                             tbl_User_Model as CreatedBy ON tbl_Application_Model.CreatedBy = CreatedBy.UserId left JOIN
-                                    tbl_User_Model as ReleasedBy ON tbl_Application_Model.ReleasedBy = ReleasedBy.UserId left JOIN
-                              tbl_User_Model as SubmittedBy ON tbl_Application_Model.SubmittedBy = SubmittedBy.UserId left JOIN
-							  tbl_Group_Model on tbl_Group_Model.GroupID = tbl_LoanDetails_Model.GroupId left join
-                              (select  FilePath,MemId from tbl_fileupload_Model where tbl_fileupload_Model.[Type] = 1)  as file_ on file_.MemId = tbl_Member_Model.MemId  
-where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'";
-                    DataTable dt = db.SelectDb(sql).Tables[0];
                     //DataTable dt = db.SelectDb_SP("sp_GetApplicationList").Tables[0];
                     foreach (DataRow dr in dt.Rows)
                     {
@@ -1965,7 +1976,7 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                         item.GroupName = dr["GroupName"].ToString();
 
                         item.RefNo = dr["RefNo"].ToString();
-                        item.AreaName = dr_area["Area"].ToString();
+                        item.AreaName =dr["AreaName"].ToString();
                         item.Cno = dr["BorrowerCno"].ToString();
                         item.CoBorrower = dr["CoBorrower"].ToString();
                         item.Co_Cno = dr["Co_Cno"].ToString();
@@ -1985,14 +1996,28 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                         item.SubmittedBy = dr["SubmittedBy"].ToString();
                         item.DateSubmitted = DateSubmitted;
                         item.ReleasedBy = dr["ReleasedBy"].ToString();
+                        double value = double.Parse(dr["InterestRate"].ToString() == "" ? "0": dr["InterestRate"].ToString());
+                        string resulta;
 
+                        if (value == 1.0)
+                        {
+                            resulta = "100 %";
+                        }
+                        else if (value == 0.200)
+                        {
+                            resulta = "20 %";
+                        }
+                        else
+                        {
+                            resulta = (value * 100) + " %";
+                        }
 
                         item.LDID = dr["LDID"].ToString();
                         item.LoanAmount = dr["LoanAmount"].ToString();
                         item.LoanType = dr["LoanTypeName"].ToString();
                         item.LoanTypeID = dr["LoanTypeID"].ToString();
                         var type = dr["InterestType"].ToString() == "Percentage" ? "Percentage" : dr["InterestType"].ToString();
-                        item.Interest = dr["InterestRate"].ToString() + " Percentage";
+                        item.Interest = resulta;
                         item.TermsOfPayment = dr["TermsOfPayment"].ToString() + " " + dr["Days"].ToString() + " Days";
                         item.ModeOfRelease = dr["ModeOfRelease"].ToString();
                         item.NameOfTerms = dr["NameOfTerms"].ToString();
@@ -2008,8 +2033,8 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                         result.Add(item);
                     }
 
-                }
-            }
+                
+            
 
             return result;
         }
@@ -2044,6 +2069,61 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                 a_item.FieldExpenses = dr_area["FieldExpenses"].ToString();
                 a_item.CollectionRefNo = dr_area["CollectionRefNo"].ToString();
                 a_item.Remarks = dr_area["Remarks"].ToString();
+                result.Add(a_item);
+            }
+
+            return result;
+
+        }
+
+        public List<AreaActiveCollection> GetActiveCollectionDashboard(int day,string areaid)
+        {
+            var result = new List<AreaActiveCollection>();
+            string sql_areas = $@"select Count(*) as NoPayment,AreaId, sum(tbl_LoanDetails_Model.ApprovedDailyAmountDue) as ActiveCollection, sum(tbl_Collection_AreaMember_Model.LapsePayment) as PastDue
+            from tbl_Collection_AreaMember_Model inner join
+            tbl_CollectionArea_Model on tbl_Collection_AreaMember_Model.Area_RefNo = tbl_CollectionArea_Model.Area_RefNo inner join
+            tbl_Application_Model on tbl_Collection_AreaMember_Model.NAID = tbl_Application_Model.NAID left join
+            tbl_Member_Model on tbl_Application_Model.MemId = tbl_Member_Model.MemId inner join
+            tbl_LoanDetails_Model on tbl_Application_Model.NAID	 = tbl_LoanDetails_Model.NAID
+
+            where Payment_Method='No Payment' and tbl_Application_Model.Status= 14 and tbl_Application_Model.DateCreated >= (DATEADD(day,-30,getdate())) 
+            group by Payment_Method ,AreaId";
+            DataTable tbl_sql_areas = db.SelectDb(sql_areas).Tables[0];
+            foreach (DataRow dr_area in tbl_sql_areas.Rows)
+            {
+                var a_item = new AreaActiveCollection();
+                a_item.NoPayment = int.Parse(dr_area["NoPayment"].ToString());
+                a_item.AreaId = dr_area["AreaId"].ToString();
+                //a_item.MemId = dr_area["MemId"].ToString();
+                a_item.ActiveCollection = double.Parse(dr_area["ActiveCollection"].ToString());
+                a_item.PastDueCollection = double.Parse(dr_area["PastDue"].ToString());
+                result.Add(a_item);
+            }
+
+            return result;
+
+        }
+        public List<AreaActiveCollection> GetActiveCollectionMemberDashboard(int day, string areaid)
+        {
+            var result = new List<AreaActiveCollection>();
+            string sql_areas = $@"
+            select Count(*) as NoPayment,AreaId,tbl_Member_Model.MemId, sum(tbl_LoanDetails_Model.ApprovedDailyAmountDue) as ActiveCollection, sum(tbl_Collection_AreaMember_Model.LapsePayment) as PastDue
+            from tbl_Collection_AreaMember_Model inner join
+            tbl_CollectionArea_Model on tbl_Collection_AreaMember_Model.Area_RefNo = tbl_CollectionArea_Model.Area_RefNo inner join
+            tbl_Application_Model on tbl_Collection_AreaMember_Model.NAID = tbl_Application_Model.NAID left join
+            tbl_Member_Model on tbl_Application_Model.MemId = tbl_Member_Model.MemId inner join
+            tbl_LoanDetails_Model on tbl_Application_Model.NAID	 = tbl_LoanDetails_Model.NAID
+
+            where Payment_Method='No Payment' and tbl_Application_Model.Status= 14  and tbl_CollectionArea_Model.AreaID ='" + areaid + "' group by Payment_Method ,AreaId,tbl_Member_Model.MemId ";
+            DataTable tbl_sql_areas = db.SelectDb(sql_areas).Tables[0];
+            foreach (DataRow dr_area in tbl_sql_areas.Rows)
+            {
+                var a_item = new AreaActiveCollection();
+                a_item.NoPayment = int.Parse(dr_area["NoPayment"].ToString());
+                a_item.AreaId = dr_area["AreaId"].ToString();
+                a_item.MemId = dr_area["MemId"].ToString();
+                a_item.ActiveCollection = double.Parse(dr_area["ActiveCollection"].ToString());
+                a_item.PastDueCollection = double.Parse(dr_area["PastDue"].ToString());
                 result.Add(a_item);
             }
 
@@ -3004,8 +3084,10 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                     b_res.Add(b_item);
                 }
 
-                string sql_assets = $@"SELECT        MotorVehicles FROM            tbl_AssetsProperties_Model
-                                        WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
+                string sql_assets = $@"SELECT    distinct    MotorVehicles FROM            tbl_AssetsProperties_Model inner join 
+tbl_LoanDetails_Model on tbl_AssetsProperties_Model.MemId = tbl_LoanDetails_Model.MemId inner join
+tbl_Application_Model on tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID
+                                        WHERE        tbl_Application_Model.NAID = '"+ApplicationId+"'";
 
                 DataTable assets_table = db.SelectDb(sql_assets).Tables[0];
                 var assest_res = new List<AssetsModel>();
@@ -4131,355 +4213,389 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
 
             return result;
         }
-
-        public List<MemberModelVM> GetMembershipFilterByFullname(string fullname)
+        public class MemApplication
         {
+           
+            public string? Fullname { get; set; }
+            public string? Fname { get; set; }
+            public string? Lname { get; set; }
+            public string? Mname { get; set; }
+            public string? Suffix { get; set; }
+            public string? MemId { get; set; }
 
+        }
+        public List<MemberModelVM> MemApplicationList()
+        {
             var result = new List<MemberModelVM>();
-            var param = new IDataParameter[]
-            {
-                    new SqlParameter("@Fullname",fullname)
-            };
-            DataTable table = db.SelectDb_SP("sp_MemberFiltering", param).Tables[0];
-            foreach (DataRow dr in table.Rows)
-            {
+            string sql = $@"SELECT 
+            CONCAT( tbl_Member_Model.Fname,' ', tbl_Member_Model.Mname,' ', tbl_Member_Model.Lname,' ', tbl_Member_Model.Suffix) as Fullname,  
+            tbl_Member_Model.Fname, tbl_Member_Model.Lname, tbl_Member_Model.Mname, tbl_Member_Model.Suffix,tbl_Member_Model.MemId
 
-                var datec = dr["DateCreated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateCreated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
-                string BOstatus = dr["BO_Status"].ToString() == "true" ? "1" : dr["BO_Status"].ToString();
+            from tbl_Member_Model where [Status] <> 0 ";
+
+            DataTable dt = db.SelectDb(sql).Tables[0];
+            foreach (DataRow dr in dt.Rows)
+            {
                 var item = new MemberModelVM();
                 item.Fullname = dr["Fullname"].ToString();
                 item.Fname = dr["Fname"].ToString();
                 item.Lname = dr["Lname"].ToString();
                 item.Mname = dr["Mname"].ToString();
                 item.Suffix = dr["Suffix"].ToString();
-                item.Age = dr["Age"].ToString();
-                item.Barangay = dr["Barangay"].ToString();
-                item.City = dr["City"].ToString();
-                item.Civil_Status = dr["Civil_Status"].ToString();
-                item.Cno = dr["Cno"].ToString();
-                item.House_Stats = dr["House_Stats"].ToString();
-                item.Country = dr["Country"].ToString();
-                item.DOB = dr["DOB"].ToString();
-                item.EmailAddress = dr["EmailAddress"].ToString();
-                item.Gender = dr["Gender"].ToString();
-                item.HouseNo = dr["HouseNo"].ToString();
-                item.POB = dr["POB"].ToString();
-                item.Province = dr["Province"].ToString();
                 item.MemId = dr["MemId"].ToString();
-                item.Status = dr["MemberStatus"].ToString();
-                item.DateCreated = datec;
-                item.YearsStay = dr["YearsStay"].ToString();
-                item.ZipCode = dr["ZipCode"].ToString();
-                item.ElectricBill = dr["ElectricBill"].ToString();
-                item.WaterBill = dr["WaterBill"].ToString();
-                item.ElectricBill = dr["ElectricBill"].ToString();
-                item.OtherBills = dr["OtherBills"].ToString();
-                item.DailyExpenses = dr["DailyExpenses"].ToString();
-                item.Emp_Status = dr["Emp_Status"].ToString();
-                item.BO_Status = BOstatus;
-                item.OtherSOC = dr["OtherSOC"].ToString();
-                item.MonthlySalary = dr["MonthlySalary"].ToString();
-                item.CompanyName = dr["CompanyName"].ToString();
-                item.CompanyAddress = dr["CompanyAddress"].ToString();
-                item.YOS = dr["YOS"].ToString();
-                item.JobDescription = dr["JobDescription"].ToString();
-                var famnod = dr["Fam_NOD"].ToString() == "" ? "0" : dr["Fam_NOD"].ToString();
-                var F_YOS = dr["Fam_YOS"].ToString() == "" ? "0" : dr["Fam_YOS"].ToString();
-                var F_Age = dr["Fam_Age"].ToString() == "" ? "0" : dr["Fam_Age"].ToString();
-                var F_Emp_Status = dr["Fam_EmpStatus"].ToString() == "" ? "0" : dr["Fam_EmpStatus"].ToString();
-                var F_DOB = dr["Fam_DOB"].ToString() == "" ? "" : Convert.ToDateTime(dr["Fam_DOB"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
-                item.F_Fname = dr["Fam_Fname"].ToString();
-                item.F_Lname = dr["Fam_Lname"].ToString();
-                item.F_Mname = dr["Fam_Mname"].ToString();
-                item.F_Suffix = dr["Fam_Suffix"].ToString();
-                item.F_RTTB = dr["Fam_RTTB"].ToString();
-                item.F_NOD = famnod.ToString();
-                item.F_CompanyName = dr["Fam_CompanyName"].ToString();
-                item.F_YOS = F_YOS;
-                item.F_Job = dr["Position"].ToString();
-                item.F_Emp_Status = F_Emp_Status;
-                item.F_Age = F_Age;
-                item.F_DOB = F_DOB;
-                item.FamId = dr["FamId"].ToString();
-
-                string sql_child = $@"SELECT        Id, Fname, Mname, Lname, Age, NOS, FamId, Status, DateCreated, DateUpdated
-                            FROM            tbl_ChildInfo_Model
-                            WHERE        (FamId = '" + dr["FamId"].ToString() + "')";
-
-                DataTable child_table = db.SelectDb(sql_child).Tables[0];
-                var child_res = new List<ChildModel>();
-                foreach (DataRow c_dr in child_table.Rows)
-                {
-                    var items = new ChildModel();
-                    items.Fname = c_dr["Fname"].ToString();
-                    items.Lname = c_dr["Mname"].ToString();
-                    items.Mname = c_dr["Lname"].ToString();
-                    items.Age = int.Parse(c_dr["Age"].ToString());
-                    items.NOS = c_dr["NOS"].ToString();
-                    items.FamId = c_dr["FamId"].ToString();
-                    child_res.Add(items);
-
-                }
-                item.Child = child_res;
-                //business
-                string sql_business = $@"SELECT        tbl_BusinessInformation_Model.Id, tbl_BusinessInformation_Model.BusinessName, tbl_BusinessInformation_Model.BusinessAddress, tbl_BusinessInformation_Model.YOB, tbl_BusinessInformation_Model.NOE, 
-                         tbl_BusinessInformation_Model.Salary, tbl_BusinessInformation_Model.VOS, tbl_BusinessInformation_Model.AOS, tbl_BusinessInformation_Model.DateCreated, tbl_BusinessInformation_Model.DateUpdated, 
-                         tbl_BusinessInformation_Model.BIID, tbl_Status_Model.Name AS Business_Status, tbl_Status_Model_1.Name AS Status, tbl_BusinessInformation_Model.BusinessType,tbl_BusinessInformation_Model.B_status AS B_statusID,tbl_BusinessInformation_Model.FilesUploaded
-
-                        FROM            tbl_BusinessInformation_Model INNER JOIN
-                                                 tbl_Status_Model ON tbl_BusinessInformation_Model.B_status = tbl_Status_Model.Id INNER JOIN
-                         tbl_Status_Model AS tbl_Status_Model_1 ON tbl_BusinessInformation_Model.Status = tbl_Status_Model_1.Id
-                                        WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
-
-                DataTable b_table = db.SelectDb(sql_business).Tables[0];
-                var b_res = new List<BusinessModelVM>();
-                foreach (DataRow b_dr in b_table.Rows)
-                {
-                    var b_item = new BusinessModelVM();
-                    b_item.BusinessName = b_dr["BusinessName"].ToString();
-                    b_item.BusinessType = b_dr["BusinessType"].ToString();
-                    b_item.BusinessAddress = b_dr["BusinessAddress"].ToString();
-                    b_item.B_statusID = b_dr["B_statusID"].ToString();
-                    b_item.YOB = int.Parse(b_dr["YOB"].ToString());
-                    b_item.NOE = int.Parse(b_dr["NOE"].ToString());
-                    b_item.Salary = decimal.Parse(b_dr["Salary"].ToString());
-                    b_item.VOS = decimal.Parse(b_dr["VOS"].ToString());
-                    b_item.AOS = decimal.Parse(b_dr["AOS"].ToString());
-                    var b_files = new List<FileModel>();
-                    b_item.B_status = b_dr["Business_Status"].ToString();
-                    if (b_dr["FilesUploaded"].ToString() != null)
-                    {
-                        var files = b_dr["FilesUploaded"].ToString().Split('|');
-
-                        for (int x = 0; x < files.ToList().Count; x++)
-                        {
-                            var items = new FileModel();
-                            items.FilePath = files[x];
-                            b_files.Add(items);
-                        }
-
-                    }
-                    b_item.BusinessFiles = b_files;
-                    b_res.Add(b_item);
-                }
-
-                string sql_assets = $@"SELECT        MotorVehicles FROM            tbl_AssetsProperties_Model
-                                        WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
-
-                DataTable assets_table = db.SelectDb(sql_assets).Tables[0];
-                var assest_res = new List<AssetsModel>();
-                foreach (DataRow b_dr in assets_table.Rows)
-                {
-                    var assets_item = new AssetsModel();
-                    assets_item.MotorVehicles = b_dr["MotorVehicles"].ToString();
-                    assest_res.Add(assets_item);
-                }
-
-                //Property
-                string sql_property = $@"SELECT     Property  FROM   tbl_Property_Model
-                                        WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
-
-                DataTable property_table = db.SelectDb(sql_property).Tables[0];
-                var property_res = new List<PropertyDetailsModel>();
-                foreach (DataRow b_dr in property_table.Rows)
-                {
-                    var property_item = new PropertyDetailsModel();
-                    property_item.Property = b_dr["Property"].ToString();
-                    property_res.Add(property_item);
-                }
-
-                string sql_bank = $@"SELECT        BankName, Address, DateCreated, DateUpdated, BankID, Status, MemId
-                                        FROM            tbl_BankAccounts_Model
-                                        WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
-
-                DataTable bank_table = db.SelectDb(sql_bank).Tables[0];
-                var bank_res = new List<BankModel>();
-                foreach (DataRow b_dr in bank_table.Rows)
-                {
-                    var bank_item = new BankModel();
-                    bank_item.BankName = b_dr["BankName"].ToString();
-                    bank_item.Address = b_dr["Address"].ToString();
-                    bank_res.Add(bank_item);
-                }
-                string sql_appliances = $@"SELECT        tbl_Appliance_Model.Brand, tbl_Appliance_Model.Description, tbl_Appliance_Model.NAID
-                         FROM            tbl_Application_Model INNER JOIN
-                         tbl_Member_Model ON tbl_Application_Model.MemId = tbl_Member_Model.MemId INNER JOIN
-                         tbl_Appliance_Model ON tbl_Application_Model.NAID = tbl_Appliance_Model.NAID
-                                        WHERE        (tbl_Member_Model.MemId = '" + dr["MemId"].ToString() + "')";
-
-                DataTable appliances_table = db.SelectDb(sql_appliances).Tables[0];
-                var appliances_res = new List<ApplianceModel>();
-                foreach (DataRow b_dr in appliances_table.Rows)
-                {
-                    var appliances_item = new ApplianceModel();
-                    appliances_item.Appliances = b_dr["Description"].ToString();
-                    appliances_item.Brand = b_dr["Brand"].ToString();
-                    appliances_item.NAID = b_dr["NAID"].ToString();
-                    appliances_res.Add(appliances_item);
-                }  //files
-
-                string sql_files = $@"SELECT        tbl_fileupload_Model.MemId, tbl_fileupload_Model.FileName, tbl_fileupload_Model.FilePath, tbl_TypesModel.TypeName, tbl_Status_Model.Name AS Status
-                         FROM            tbl_fileupload_Model INNER JOIN
-                         tbl_TypesModel ON tbl_fileupload_Model.Type = tbl_TypesModel.Id INNER JOIN
-                         tbl_Status_Model ON tbl_fileupload_Model.Status = tbl_Status_Model.Id
-                                        WHERE        (tbl_fileupload_Model.MemId = '" + dr["MemId"].ToString() + "')";
-
-                DataTable file_table = db.SelectDb(sql_files).Tables[0];
-                var file_res = new List<FileModel>();
-                if (file_table.Rows.Count != 0)
-                {
-                    foreach (DataRow b_dr in file_table.Rows)
-                    {
-                        var file_item = new FileModel();
-                        file_item.FileName = b_dr["FileName"].ToString();
-                        file_item.FilePath = b_dr["FilePath"].ToString();
-                        file_item.FileType = b_dr["TypeName"].ToString();
-                        file_res.Add(file_item);
-                    }
-                }
-                item.Files = file_res;
-                item.Property = property_res;
-                item.Appliances = appliances_res;
-                item.Bank = bank_res;
-                item.Assets = assest_res;
-                item.Business = b_res;
-                //item.LoanAmount = decimal.Parse(dr["LoanAmount"].ToString());
-                var amount = dr["LoanAmount"].ToString() == "" ? "0.00" : dr["LoanAmount"].ToString();
-                // item.LoanAmount = decimal.Parse(amount);
-                //item.LoanAmount = decimal.Parse(dr["LoanAmount"].ToString());
-                //var amount = dr["LoanAmount"].ToString() == "" ? "0.00" : dr["LoanAmount"].ToString();
-                // item.LoanAmount = decimal.Parse(amount);
-                var grouploan = GetGroupApplicationList().Where(a => a.MemId == dr["MemId"].ToString()).ToList();
-                var individualloan = GetApplicationListFilter(dr["NAID"].ToString()).ToList();
-                var group = new List<GroupApplicationVM2>();
-                var individual_ = new List<ApplicationVM2>();
-
-
-                if (grouploan.Count != 0)
-                {
-                    for (int x = 0; x < grouploan.Count; x++)
-                    {
-                        var g_item = new GroupApplicationVM2();
-                        g_item.LoanAmount = grouploan[x].Loandetails[0].LoanAmount;
-                        g_item.Terms = grouploan[x].Loandetails[0].Terms;
-                        g_item.LoanType = grouploan[x].Loandetails[0].LoanType;
-                        g_item.InterestRate = grouploan[x].Loandetails[0].InterestRate;
-                        g_item.GroupId = grouploan[x].GroupId;
-                        g_item.LDID = grouploan[x].Loandetails[0].LDID;
-
-                        g_item.CI_ApprovedBy = grouploan[x].Loandetails[0].CI_ApprovedBy;
-                        g_item.CI_ApprovalDate = grouploan[x].Loandetails[0].CI_ApprovalDate;
-                        g_item.ReleasingDate = grouploan[x].Loandetails[0].ReleasingDate;
-                        g_item.DeclineDate = grouploan[x].Loandetails[0].DeclineDate;
-                        g_item.App_ApprovedBy_1 = grouploan[x].Loandetails[0].App_ApprovedBy_1;
-                        g_item.App_ApprovalDate_1 = grouploan[x].Loandetails[0].App_ApprovalDate_1;
-                        g_item.App_ApprovedBy_2 = grouploan[x].Loandetails[0].App_ApprovedBy_2;
-                        g_item.App_ApprovalDate_2 = grouploan[x].Loandetails[0].App_ApprovalDate_2;
-                        g_item.App_Note = grouploan[x].Loandetails[0].App_Note;
-                        g_item.App_Notedby = grouploan[x].Loandetails[0].App_Notedby;
-                        g_item.App_NotedDate = grouploan[x].Loandetails[0].App_NotedDate;
-                        g_item.CreatedBy = grouploan[x].Loandetails[0].CreatedBy;
-                        g_item.SubmittedBy = grouploan[x].Loandetails[0].SubmittedBy;
-                        g_item.DateSubmitted = grouploan[x].Loandetails[0].DateSubmitted;
-                        g_item.ReleasedBy = grouploan[x].Loandetails[0].ReleasedBy;
-
-                        g_item.ModeOfRelease = grouploan[x].Loandetails[0].ModeOfRelease;
-                        g_item.ModeOfReleaseReference = grouploan[x].Loandetails[0].ModeOfReleaseReference;
-                        g_item.Courerier = grouploan[x].Loandetails[0].Courerier;
-                        g_item.CourierCNo = grouploan[x].Loandetails[0].CourierCNo;
-                        g_item.CourerierName = grouploan[x].Loandetails[0].CourerierName;
-                        g_item.Denomination = grouploan[x].Loandetails[0].Denomination;
-                        g_item.AreaName = grouploan[x].Loandetails[0].AreaName;
-                        g_item.Remarks = grouploan[x].Loandetails[0].Remarks;
-                        g_item.ApprovedLoanAmount = grouploan[x].Loandetails[0].ApprovedLoanAmount;
-                        g_item.ApprovedTermsOfPayment = grouploan[x].Loandetails[0].ApprovedTermsOfPayment;
-                        g_item.ApprovedTermsOfPayment = grouploan[x].Loandetails[0].ApprovedTermsOfPayment;
-                        g_item.Days = grouploan[x].Loandetails[0].Days;
-                        group.Add(g_item);
-                    }
-
-                }
-                else
-                {
-                    for (int x = 0; x < individualloan.Count; x++)
-                    {
-                        var i_item = new ApplicationVM2();
-                        i_item.LoanAmount = individualloan[x].LoanAmount;
-                        i_item.Terms = individualloan[x].TermsOfPayment;
-                        i_item.NameOfTerms = individualloan[x].NameOfTerms;
-                        i_item.InterestRate = individualloan[x].Interest;
-                        i_item.LoanType = individualloan[x].LoanType;
-                        i_item.LoanTypeID = individualloan[x].LoanTypeID;
-                        i_item.LDID = individualloan[x].LDID;
-
-                        i_item.CI_ApprovedBy = individualloan[x].CI_ApprovedBy;
-                        i_item.CI_ApprovalDate = individualloan[x].CI_ApprovalDate;
-                        i_item.ReleasingDate = individualloan[x].ReleasingDate;
-                        i_item.DeclineDate = individualloan[x].DeclineDate;
-                        i_item.DeclinedBy = individualloan[x].DeclinedBy;
-                        i_item.App_ApprovedBy_1 = individualloan[x].App_ApprovedBy_1;
-                        i_item.App_ApprovalDate_1 = individualloan[x].App_ApprovalDate_1;
-                        i_item.App_ApprovedBy_2 = individualloan[x].App_ApprovedBy_2;
-                        i_item.App_ApprovalDate_2 = individualloan[x].App_ApprovalDate_2;
-                        i_item.App_Note = individualloan[x].App_Note;
-                        i_item.App_Notedby = individualloan[x].App_Notedby;
-                        i_item.App_NotedDate = individualloan[x].App_NotedDate;
-                        i_item.CreatedBy = individualloan[x].CreatedBy;
-                        i_item.SubmittedBy = individualloan[x].SubmittedBy;
-                        i_item.DateSubmitted = individualloan[x].DateSubmitted;
-                        i_item.ReleasedBy = individualloan[x].ReleasedBy;
-
-                        i_item.ModeOfRelease = individualloan[x].ModeOfRelease;
-                        i_item.ModeOfReleaseReference = individualloan[x].ModeOfReleaseReference;
-                        i_item.Courerier = individualloan[x].Courerier;
-                        i_item.CourierCNo = individualloan[x].CourierCNo;
-                        i_item.CourerierName = individualloan[x].CourerierName;
-                        i_item.Denomination = individualloan[x].Denomination;
-                        i_item.AreaName = individualloan[x].AreaName;
-                        i_item.Remarks = individualloan[x].Remarks;
-                        i_item.ApprovedLoanAmount = individualloan[x].ApprovedLoanAmount;
-                        i_item.ApprovedTermsOfPayment = individualloan[x].ApprovedTermsOfPayment;
-                        i_item.Days = individualloan[x].Days;
-
-                        individual_.Add(i_item);
-                    }
-                }
-                item.GroupLoan = group;
-                item.IndividualLoan = individual_;
-                item.TermsOfPayment = dr["TermsOfPayment"].ToString();
-                item.Purpose = dr["Purpose"].ToString();
-                item.Co_Fname = dr["Co_Fname"].ToString();
-                item.Co_Mname = dr["Co_Mname"].ToString();
-                item.Co_Lname = dr["Lnam"].ToString();
-                item.Co_Suffix = dr["Co_Suffix"].ToString();
-                item.Co_Gender = dr["Co_Gender"].ToString();
-                var co_dob = dr["Co_DOB"].ToString() == "" ? "0.00" : Convert.ToDateTime(dr["Co_DOB"].ToString()).ToString("yyyy-MM-dd");
-                item.Co_DOB = co_dob;
-                item.Co_POB = dr["Co_POB"].ToString();
-                item.Co_Age = dr["Co_Age"].ToString();
-                item.Co_Cno = dr["Co_Cno"].ToString();
-                item.Co_Civil_Status = dr["CivilStatus"].ToString();
-                item.Co_EmailAddress = dr["Co_EmailAddress"].ToString();
-                item.Co_HouseNo = dr["Co_HouseNo"].ToString();
-                item.Co_Barangay = dr["Co_Barangay"].ToString();
-                item.Co_City = dr["Co_City"].ToString();
-                item.Co_Province = dr["Region"].ToString();
-                item.Co_Country = dr["Co_Country"].ToString();
-                item.Co_ZipCode = dr["Co_ZipCode"].ToString();
-                item.Co_YearsStay = dr["Co_YOS"].ToString();
-                item.Co_RTTB = dr["Co_RTTB"].ToString();
-                item.CMID = dr["CMID"].ToString();
-                item.Co_JobDescription = dr["Co_JobDescription"].ToString();
-                item.Coj_YOS = dr["Coj_YOS"].ToString();
-                item.Co_CompanyName = dr["Co_CompanyName"].ToString();
-                item.Co_CompanyAddress = dr["Co_CompanyAddress"].ToString();
-                item.Co_MonthlySalary = dr["Co_MonthlySalary"].ToString();
-                item.Co_OtherSOC = dr["Co_OtherSOC"].ToString();
-                item.Co_Emp_Status = dr["Co_Emp_Status"].ToString();
-                item.Co_BO_Status = dr["Co_BO_Status"].ToString();
-                item.Co_House_Stats = dr["Co_House_Stats"].ToString();
                 result.Add(item);
             }
+            return result;
+        }
+            public List<MemberModelVM> GetMembershipFilterByFullname(string fullname)
+        {
+            var result = new List<MemberModelVM>();
+
+            //var result = new List<MemberModelVM>();
+            //var param = new IDataParameter[]
+            //{
+            //        new SqlParameter("@Fullname",fullname)
+            //};
+            //DataTable table = db.SelectDb_SP("sp_MemberFiltering", param).Tables[0];
+            //foreach (DataRow dr in table.Rows)
+            //{
+
+            //    var datec = dr["DateCreated"].ToString() == "" ? "" : Convert.ToDateTime(dr["DateCreated"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+            //    string BOstatus = dr["BO_Status"].ToString() == "true" ? "1" : dr["BO_Status"].ToString();
+            //    var item = new MemberModelVM();
+            //    item.Fullname = dr["Fullname"].ToString();
+            //    item.Fname = dr["Fname"].ToString();
+            //    item.Lname = dr["Lname"].ToString();
+            //    item.Mname = dr["Mname"].ToString();
+            //    item.Suffix = dr["Suffix"].ToString();
+            //    item.Age = dr["Age"].ToString();
+            //    item.Barangay = dr["Barangay"].ToString();
+            //    item.City = dr["City"].ToString();
+            //    item.Civil_Status = dr["Civil_Status"].ToString();
+            //    item.Cno = dr["Cno"].ToString();
+            //    item.House_Stats = dr["House_Stats"].ToString();
+            //    item.Country = dr["Country"].ToString();
+            //    item.DOB = dr["DOB"].ToString();
+            //    item.EmailAddress = dr["EmailAddress"].ToString();
+            //    item.Gender = dr["Gender"].ToString();
+            //    item.HouseNo = dr["HouseNo"].ToString();
+            //    item.POB = dr["POB"].ToString();
+            //    item.Province = dr["Province"].ToString();
+            //    item.MemId = dr["MemId"].ToString();
+            //    item.Status = dr["MemberStatus"].ToString();
+            //    item.DateCreated = datec;
+            //    item.YearsStay = dr["YearsStay"].ToString();
+            //    item.ZipCode = dr["ZipCode"].ToString();
+            //    item.ElectricBill = dr["ElectricBill"].ToString();
+            //    item.WaterBill = dr["WaterBill"].ToString();
+            //    item.ElectricBill = dr["ElectricBill"].ToString();
+            //    item.OtherBills = dr["OtherBills"].ToString();
+            //    item.DailyExpenses = dr["DailyExpenses"].ToString();
+            //    item.Emp_Status = dr["Emp_Status"].ToString();
+            //    item.BO_Status = BOstatus;
+            //    item.OtherSOC = dr["OtherSOC"].ToString();
+            //    item.MonthlySalary = dr["MonthlySalary"].ToString();
+            //    item.CompanyName = dr["CompanyName"].ToString();
+            //    item.CompanyAddress = dr["CompanyAddress"].ToString();
+            //    item.YOS = dr["YOS"].ToString();
+            //    item.JobDescription = dr["JobDescription"].ToString();
+            //    var famnod = dr["Fam_NOD"].ToString() == "" ? "0" : dr["Fam_NOD"].ToString();
+            //    var F_YOS = dr["Fam_YOS"].ToString() == "" ? "0" : dr["Fam_YOS"].ToString();
+            //    var F_Age = dr["Fam_Age"].ToString() == "" ? "0" : dr["Fam_Age"].ToString();
+            //    var F_Emp_Status = dr["Fam_EmpStatus"].ToString() == "" ? "0" : dr["Fam_EmpStatus"].ToString();
+            //    var F_DOB = dr["Fam_DOB"].ToString() == "" ? "" : Convert.ToDateTime(dr["Fam_DOB"].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+            //    item.F_Fname = dr["Fam_Fname"].ToString();
+            //    item.F_Lname = dr["Fam_Lname"].ToString();
+            //    item.F_Mname = dr["Fam_Mname"].ToString();
+            //    item.F_Suffix = dr["Fam_Suffix"].ToString();
+            //    item.F_RTTB = dr["Fam_RTTB"].ToString();
+            //    item.F_NOD = famnod.ToString();
+            //    item.F_CompanyName = dr["Fam_CompanyName"].ToString();
+            //    item.F_YOS = F_YOS;
+            //    item.F_Job = dr["Position"].ToString();
+            //    item.F_Emp_Status = F_Emp_Status;
+            //    item.F_Age = F_Age;
+            //    item.F_DOB = F_DOB;
+            //    item.FamId = dr["FamId"].ToString();
+
+            //    string sql_child = $@"SELECT        Id, Fname, Mname, Lname, Age, NOS, FamId, Status, DateCreated, DateUpdated
+            //                FROM            tbl_ChildInfo_Model
+            //                WHERE        (FamId = '" + dr["FamId"].ToString() + "')";
+
+            //    DataTable child_table = db.SelectDb(sql_child).Tables[0];
+            //    var child_res = new List<ChildModel>();
+            //    foreach (DataRow c_dr in child_table.Rows)
+            //    {
+            //        var items = new ChildModel();
+            //        items.Fname = c_dr["Fname"].ToString();
+            //        items.Lname = c_dr["Mname"].ToString();
+            //        items.Mname = c_dr["Lname"].ToString();
+            //        items.Age = int.Parse(c_dr["Age"].ToString());
+            //        items.NOS = c_dr["NOS"].ToString();
+            //        items.FamId = c_dr["FamId"].ToString();
+            //        child_res.Add(items);
+
+            //    }
+            //    item.Child = child_res;
+            //    //business
+            //    string sql_business = $@"SELECT        tbl_BusinessInformation_Model.Id, tbl_BusinessInformation_Model.BusinessName, tbl_BusinessInformation_Model.BusinessAddress, tbl_BusinessInformation_Model.YOB, tbl_BusinessInformation_Model.NOE, 
+            //             tbl_BusinessInformation_Model.Salary, tbl_BusinessInformation_Model.VOS, tbl_BusinessInformation_Model.AOS, tbl_BusinessInformation_Model.DateCreated, tbl_BusinessInformation_Model.DateUpdated, 
+            //             tbl_BusinessInformation_Model.BIID, tbl_Status_Model.Name AS Business_Status, tbl_Status_Model_1.Name AS Status, tbl_BusinessInformation_Model.BusinessType,tbl_BusinessInformation_Model.B_status AS B_statusID,tbl_BusinessInformation_Model.FilesUploaded
+
+            //            FROM            tbl_BusinessInformation_Model INNER JOIN
+            //                                     tbl_Status_Model ON tbl_BusinessInformation_Model.B_status = tbl_Status_Model.Id INNER JOIN
+            //             tbl_Status_Model AS tbl_Status_Model_1 ON tbl_BusinessInformation_Model.Status = tbl_Status_Model_1.Id
+            //                            WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
+
+            //    DataTable b_table = db.SelectDb(sql_business).Tables[0];
+            //    var b_res = new List<BusinessModelVM>();
+            //    foreach (DataRow b_dr in b_table.Rows)
+            //    {
+            //        var b_item = new BusinessModelVM();
+            //        b_item.BusinessName = b_dr["BusinessName"].ToString();
+            //        b_item.BusinessType = b_dr["BusinessType"].ToString();
+            //        b_item.BusinessAddress = b_dr["BusinessAddress"].ToString();
+            //        b_item.B_statusID = b_dr["B_statusID"].ToString();
+            //        b_item.YOB = int.Parse(b_dr["YOB"].ToString());
+            //        b_item.NOE = int.Parse(b_dr["NOE"].ToString());
+            //        b_item.Salary = decimal.Parse(b_dr["Salary"].ToString());
+            //        b_item.VOS = decimal.Parse(b_dr["VOS"].ToString());
+            //        b_item.AOS = decimal.Parse(b_dr["AOS"].ToString());
+            //        var b_files = new List<FileModel>();
+            //        b_item.B_status = b_dr["Business_Status"].ToString();
+            //        if (b_dr["FilesUploaded"].ToString() != null)
+            //        {
+            //            var files = b_dr["FilesUploaded"].ToString().Split('|');
+
+            //            for (int x = 0; x < files.ToList().Count; x++)
+            //            {
+            //                var items = new FileModel();
+            //                items.FilePath = files[x];
+            //                b_files.Add(items);
+            //            }
+
+            //        }
+            //        b_item.BusinessFiles = b_files;
+            //        b_res.Add(b_item);
+            //    }
+
+            //    string sql_assets = $@"SELECT        MotorVehicles FROM            tbl_AssetsProperties_Model
+            //                            WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
+
+            //    DataTable assets_table = db.SelectDb(sql_assets).Tables[0];
+            //    var assest_res = new List<AssetsModel>();
+            //    foreach (DataRow b_dr in assets_table.Rows)
+            //    {
+            //        var assets_item = new AssetsModel();
+            //        assets_item.MotorVehicles = b_dr["MotorVehicles"].ToString();
+            //        assest_res.Add(assets_item);
+            //    }
+
+            //    //Property
+            //    string sql_property = $@"SELECT     Property  FROM   tbl_Property_Model
+            //                            WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
+
+            //    DataTable property_table = db.SelectDb(sql_property).Tables[0];
+            //    var property_res = new List<PropertyDetailsModel>();
+            //    foreach (DataRow b_dr in property_table.Rows)
+            //    {
+            //        var property_item = new PropertyDetailsModel();
+            //        property_item.Property = b_dr["Property"].ToString();
+            //        property_res.Add(property_item);
+            //    }
+
+            //    string sql_bank = $@"SELECT        BankName, Address, DateCreated, DateUpdated, BankID, Status, MemId
+            //                            FROM            tbl_BankAccounts_Model
+            //                            WHERE        (MemId = '" + dr["MemId"].ToString() + "')";
+
+            //    DataTable bank_table = db.SelectDb(sql_bank).Tables[0];
+            //    var bank_res = new List<BankModel>();
+            //    foreach (DataRow b_dr in bank_table.Rows)
+            //    {
+            //        var bank_item = new BankModel();
+            //        bank_item.BankName = b_dr["BankName"].ToString();
+            //        bank_item.Address = b_dr["Address"].ToString();
+            //        bank_res.Add(bank_item);
+            //    }
+            //    string sql_appliances = $@"SELECT        tbl_Appliance_Model.Brand, tbl_Appliance_Model.Description, tbl_Appliance_Model.NAID
+            //             FROM            tbl_Application_Model INNER JOIN
+            //             tbl_Member_Model ON tbl_Application_Model.MemId = tbl_Member_Model.MemId INNER JOIN
+            //             tbl_Appliance_Model ON tbl_Application_Model.NAID = tbl_Appliance_Model.NAID
+            //                            WHERE        (tbl_Member_Model.MemId = '" + dr["MemId"].ToString() + "')";
+
+            //    DataTable appliances_table = db.SelectDb(sql_appliances).Tables[0];
+            //    var appliances_res = new List<ApplianceModel>();
+            //    foreach (DataRow b_dr in appliances_table.Rows)
+            //    {
+            //        var appliances_item = new ApplianceModel();
+            //        appliances_item.Appliances = b_dr["Description"].ToString();
+            //        appliances_item.Brand = b_dr["Brand"].ToString();
+            //        appliances_item.NAID = b_dr["NAID"].ToString();
+            //        appliances_res.Add(appliances_item);
+            //    }  //files
+
+            //    string sql_files = $@"SELECT        tbl_fileupload_Model.MemId, tbl_fileupload_Model.FileName, tbl_fileupload_Model.FilePath, tbl_TypesModel.TypeName, tbl_Status_Model.Name AS Status
+            //             FROM            tbl_fileupload_Model INNER JOIN
+            //             tbl_TypesModel ON tbl_fileupload_Model.Type = tbl_TypesModel.Id INNER JOIN
+            //             tbl_Status_Model ON tbl_fileupload_Model.Status = tbl_Status_Model.Id
+            //                            WHERE        (tbl_fileupload_Model.MemId = '" + dr["MemId"].ToString() + "')";
+
+            //    DataTable file_table = db.SelectDb(sql_files).Tables[0];
+            //    var file_res = new List<FileModel>();
+            //    if (file_table.Rows.Count != 0)
+            //    {
+            //        foreach (DataRow b_dr in file_table.Rows)
+            //        {
+            //            var file_item = new FileModel();
+            //            file_item.FileName = b_dr["FileName"].ToString();
+            //            file_item.FilePath = b_dr["FilePath"].ToString();
+            //            file_item.FileType = b_dr["TypeName"].ToString();
+            //            file_res.Add(file_item);
+            //        }
+            //    }
+            //    item.Files = file_res;
+            //    item.Property = property_res;
+            //    item.Appliances = appliances_res;
+            //    item.Bank = bank_res;
+            //    item.Assets = assest_res;
+            //    item.Business = b_res;
+            //    //item.LoanAmount = decimal.Parse(dr["LoanAmount"].ToString());
+            //    var amount = dr["LoanAmount"].ToString() == "" ? "0.00" : dr["LoanAmount"].ToString();
+            //    // item.LoanAmount = decimal.Parse(amount);
+            //    //item.LoanAmount = decimal.Parse(dr["LoanAmount"].ToString());
+            //    //var amount = dr["LoanAmount"].ToString() == "" ? "0.00" : dr["LoanAmount"].ToString();
+            //    // item.LoanAmount = decimal.Parse(amount);
+            //    var grouploan = GetGroupApplicationList().Where(a => a.MemId == dr["MemId"].ToString()).ToList();
+            //    var individualloan = GetApplicationListFilter(dr["NAID"].ToString()).ToList();
+            //    var group = new List<GroupApplicationVM2>();
+            //    var individual_ = new List<ApplicationVM2>();
+
+
+            //    if (grouploan.Count != 0)
+            //    {
+            //        for (int x = 0; x < grouploan.Count; x++)
+            //        {
+            //            var g_item = new GroupApplicationVM2();
+            //            g_item.LoanAmount = grouploan[x].Loandetails[0].LoanAmount;
+            //            g_item.Terms = grouploan[x].Loandetails[0].Terms;
+            //            g_item.LoanType = grouploan[x].Loandetails[0].LoanType;
+            //            g_item.InterestRate = grouploan[x].Loandetails[0].InterestRate;
+            //            g_item.GroupId = grouploan[x].GroupId;
+            //            g_item.LDID = grouploan[x].Loandetails[0].LDID;
+
+            //            g_item.CI_ApprovedBy = grouploan[x].Loandetails[0].CI_ApprovedBy;
+            //            g_item.CI_ApprovalDate = grouploan[x].Loandetails[0].CI_ApprovalDate;
+            //            g_item.ReleasingDate = grouploan[x].Loandetails[0].ReleasingDate;
+            //            g_item.DeclineDate = grouploan[x].Loandetails[0].DeclineDate;
+            //            g_item.App_ApprovedBy_1 = grouploan[x].Loandetails[0].App_ApprovedBy_1;
+            //            g_item.App_ApprovalDate_1 = grouploan[x].Loandetails[0].App_ApprovalDate_1;
+            //            g_item.App_ApprovedBy_2 = grouploan[x].Loandetails[0].App_ApprovedBy_2;
+            //            g_item.App_ApprovalDate_2 = grouploan[x].Loandetails[0].App_ApprovalDate_2;
+            //            g_item.App_Note = grouploan[x].Loandetails[0].App_Note;
+            //            g_item.App_Notedby = grouploan[x].Loandetails[0].App_Notedby;
+            //            g_item.App_NotedDate = grouploan[x].Loandetails[0].App_NotedDate;
+            //            g_item.CreatedBy = grouploan[x].Loandetails[0].CreatedBy;
+            //            g_item.SubmittedBy = grouploan[x].Loandetails[0].SubmittedBy;
+            //            g_item.DateSubmitted = grouploan[x].Loandetails[0].DateSubmitted;
+            //            g_item.ReleasedBy = grouploan[x].Loandetails[0].ReleasedBy;
+
+            //            g_item.ModeOfRelease = grouploan[x].Loandetails[0].ModeOfRelease;
+            //            g_item.ModeOfReleaseReference = grouploan[x].Loandetails[0].ModeOfReleaseReference;
+            //            g_item.Courerier = grouploan[x].Loandetails[0].Courerier;
+            //            g_item.CourierCNo = grouploan[x].Loandetails[0].CourierCNo;
+            //            g_item.CourerierName = grouploan[x].Loandetails[0].CourerierName;
+            //            g_item.Denomination = grouploan[x].Loandetails[0].Denomination;
+            //            g_item.AreaName = grouploan[x].Loandetails[0].AreaName;
+            //            g_item.Remarks = grouploan[x].Loandetails[0].Remarks;
+            //            g_item.ApprovedLoanAmount = grouploan[x].Loandetails[0].ApprovedLoanAmount;
+            //            g_item.ApprovedTermsOfPayment = grouploan[x].Loandetails[0].ApprovedTermsOfPayment;
+            //            g_item.ApprovedTermsOfPayment = grouploan[x].Loandetails[0].ApprovedTermsOfPayment;
+            //            g_item.Days = grouploan[x].Loandetails[0].Days;
+            //            group.Add(g_item);
+            //        }
+
+            //    }
+            //    else
+            //    {
+            //        for (int x = 0; x < individualloan.Count; x++)
+            //        {
+            //            var i_item = new ApplicationVM2();
+            //            i_item.LoanAmount = individualloan[x].LoanAmount;
+            //            i_item.Terms = individualloan[x].TermsOfPayment;
+            //            i_item.NameOfTerms = individualloan[x].NameOfTerms;
+            //            i_item.InterestRate = individualloan[x].Interest;
+            //            i_item.LoanType = individualloan[x].LoanType;
+            //            i_item.LoanTypeID = individualloan[x].LoanTypeID;
+            //            i_item.LDID = individualloan[x].LDID;
+
+            //            i_item.CI_ApprovedBy = individualloan[x].CI_ApprovedBy;
+            //            i_item.CI_ApprovalDate = individualloan[x].CI_ApprovalDate;
+            //            i_item.ReleasingDate = individualloan[x].ReleasingDate;
+            //            i_item.DeclineDate = individualloan[x].DeclineDate;
+            //            i_item.DeclinedBy = individualloan[x].DeclinedBy;
+            //            i_item.App_ApprovedBy_1 = individualloan[x].App_ApprovedBy_1;
+            //            i_item.App_ApprovalDate_1 = individualloan[x].App_ApprovalDate_1;
+            //            i_item.App_ApprovedBy_2 = individualloan[x].App_ApprovedBy_2;
+            //            i_item.App_ApprovalDate_2 = individualloan[x].App_ApprovalDate_2;
+            //            i_item.App_Note = individualloan[x].App_Note;
+            //            i_item.App_Notedby = individualloan[x].App_Notedby;
+            //            i_item.App_NotedDate = individualloan[x].App_NotedDate;
+            //            i_item.CreatedBy = individualloan[x].CreatedBy;
+            //            i_item.SubmittedBy = individualloan[x].SubmittedBy;
+            //            i_item.DateSubmitted = individualloan[x].DateSubmitted;
+            //            i_item.ReleasedBy = individualloan[x].ReleasedBy;
+
+            //            i_item.ModeOfRelease = individualloan[x].ModeOfRelease;
+            //            i_item.ModeOfReleaseReference = individualloan[x].ModeOfReleaseReference;
+            //            i_item.Courerier = individualloan[x].Courerier;
+            //            i_item.CourierCNo = individualloan[x].CourierCNo;
+            //            i_item.CourerierName = individualloan[x].CourerierName;
+            //            i_item.Denomination = individualloan[x].Denomination;
+            //            i_item.AreaName = individualloan[x].AreaName;
+            //            i_item.Remarks = individualloan[x].Remarks;
+            //            i_item.ApprovedLoanAmount = individualloan[x].ApprovedLoanAmount;
+            //            i_item.ApprovedTermsOfPayment = individualloan[x].ApprovedTermsOfPayment;
+            //            i_item.Days = individualloan[x].Days;
+
+            //            individual_.Add(i_item);
+            //        }
+            //    }
+            //    item.GroupLoan = group;
+            //    item.IndividualLoan = individual_;
+            //    item.TermsOfPayment = dr["TermsOfPayment"].ToString();
+            //    item.Purpose = dr["Purpose"].ToString();
+            //    item.Co_Fname = dr["Co_Fname"].ToString();
+            //    item.Co_Mname = dr["Co_Mname"].ToString();
+            //    item.Co_Lname = dr["Lnam"].ToString();
+            //    item.Co_Suffix = dr["Co_Suffix"].ToString();
+            //    item.Co_Gender = dr["Co_Gender"].ToString();
+            //    var co_dob = dr["Co_DOB"].ToString() == "" ? "0.00" : Convert.ToDateTime(dr["Co_DOB"].ToString()).ToString("yyyy-MM-dd");
+            //    item.Co_DOB = co_dob;
+            //    item.Co_POB = dr["Co_POB"].ToString();
+            //    item.Co_Age = dr["Co_Age"].ToString();
+            //    item.Co_Cno = dr["Co_Cno"].ToString();
+            //    item.Co_Civil_Status = dr["CivilStatus"].ToString();
+            //    item.Co_EmailAddress = dr["Co_EmailAddress"].ToString();
+            //    item.Co_HouseNo = dr["Co_HouseNo"].ToString();
+            //    item.Co_Barangay = dr["Co_Barangay"].ToString();
+            //    item.Co_City = dr["Co_City"].ToString();
+            //    item.Co_Province = dr["Region"].ToString();
+            //    item.Co_Country = dr["Co_Country"].ToString();
+            //    item.Co_ZipCode = dr["Co_ZipCode"].ToString();
+            //    item.Co_YearsStay = dr["Co_YOS"].ToString();
+            //    item.Co_RTTB = dr["Co_RTTB"].ToString();
+            //    item.CMID = dr["CMID"].ToString();
+            //    item.Co_JobDescription = dr["Co_JobDescription"].ToString();
+            //    item.Coj_YOS = dr["Coj_YOS"].ToString();
+            //    item.Co_CompanyName = dr["Co_CompanyName"].ToString();
+            //    item.Co_CompanyAddress = dr["Co_CompanyAddress"].ToString();
+            //    item.Co_MonthlySalary = dr["Co_MonthlySalary"].ToString();
+            //    item.Co_OtherSOC = dr["Co_OtherSOC"].ToString();
+            //    item.Co_Emp_Status = dr["Co_Emp_Status"].ToString();
+            //    item.Co_BO_Status = dr["Co_BO_Status"].ToString();
+            //    item.Co_House_Stats = dr["Co_House_Stats"].ToString();
+            //    result.Add(item);
+            //}
 
             return result;
         }
@@ -4575,10 +4691,53 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
             public string Deduct_Interest { get; set; }
 
         }
+        public class dashdayresult
+        {
+            public string totaldays { get; set; }
+            public string sundaycount { get; set; }
+            public string ctr_holiday { get; set; }
+
+        }
         public class dayresult
         {
             public string totaldays { get; set; }
 
+        }
+        public dashdayresult dashdatecomputation()
+        {
+            string add_dueday = "0";
+            string DayOfHoliday = "";
+            string DateOfHoliday = "";
+            int ctr_holiday = 0;
+            int ctr = 0;
+            int total_days = 0;
+            var getdailyreset = GetSettingList().FirstOrDefault();
+            int day = int.Parse(getdailyreset.DisplayReset) == 1 ? 30 : (int.Parse(getdailyreset.DisplayReset) == 3 ? 1 : 365);
+
+            string dateto = DateTime.Now.AddDays(-day).ToString();
+            add_dueday = Convert.ToDateTime(DateTime.Now).ToString("yyyy-MM-dd");
+            int sundaycount = CountSundaysBetweenDates(DateTime.Parse(dateto), DateTime.Parse(add_dueday).AddDays(day));
+
+            for (DateTime currentDate = DateTime.Parse(add_dueday); currentDate <= DateTime.Parse(add_dueday).AddDays(day); currentDate = currentDate.AddDays(1))
+            {
+
+                var dates = Convert.ToDateTime(currentDate).ToString("yyyy-MM-dd");
+                var results = GetHolidayList().Where(a => a.Date == dates).ToList().Count;
+                if (results != 0)
+                {
+                    ctr_holiday++;
+                    DayOfHoliday += ctr_holiday + ", ";
+                    DateOfHoliday += ctr_holiday + ": " + dates + "| ";
+                }
+            }
+            total_days = day - sundaycount - ctr_holiday;
+            dashdayresult strings = new dashdayresult
+            {
+                totaldays = total_days.ToString(),
+                sundaycount = sundaycount.ToString(),
+                ctr_holiday = ctr_holiday.ToString()
+            };
+            return strings;
         }
         public dayresult datecomputation(string date, int value)
         {
@@ -5226,6 +5385,7 @@ where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model
                 item.Savings = dr["Savings"].ToString();
                 item.LoanBalance = String.Format("{0:0.00}", computation_res.LoanBalance);
                 item.TotalSavingsAmount = dr["TotalSavingsAmount"].ToString();
+              
                 //item.InterestType = dr["InterestType"].ToString();
                 item.LoanInsurance = String.Format("{0:0.00}", computation_res.total_loaninsurance);
                 //item.LoanInsurance =  dr["LoanInsurance"].ToString();
@@ -5696,10 +5856,7 @@ FROM            tbl_TermsOfPayment_Model INNER JOIN
                 DataTable table_ = db.SelectDb(sql_count).Tables[0];
                 if (table_.Rows.Count != 0)
                 {
-                    if (table_.Rows.Count == 100)
-                    {
-
-                    }
+                    
                     foreach (DataRow dr in table_.Rows)
                     {
                         string date_2 = dr["DateCollected"].ToString() == "" ? dr["ReleasingDate"].ToString() : dr["DateCollected"].ToString();
@@ -6077,7 +6234,7 @@ FROM            tbl_Area_Model INNER JOIN
                                         tbl_Member_Model on tbl_Application_Model.MemId = tbl_Member_Model.MemId left join
                                         tbl_LoanDetails_Model on tbl_Application_Model.NAID = tbl_LoanDetails_Model.NAID inner join
                                         tbl_Area_Model on tbl_Area_Model.City LIKE '%' + tbl_Member_Model.Barangay + '%' and tbl_Area_Model.FOID is not null left join
-                                        tbl_LoanHistory_Model on tbl_LoanHistory_Model.MemId = tbl_Application_Model.MemId inner join
+                                        tbl_LoanHistory_Model on tbl_LoanHistory_Model.NAID = tbl_Application_Model.NAID inner join
                                         tbl_FieldOfficer_Model on tbl_FieldOfficer_Model.FOID = tbl_Area_Model.FOID
                                     where tbl_Application_Model.Status =14 and tbl_Area_Model.AreaID='" + dr_area["AreaId"].ToString() + "'";
                 DataTable table1_ = db.SelectDb(sql_count1).Tables[0];
@@ -6437,7 +6594,7 @@ FROM            tbl_Application_Model INNER JOIN
                          tbl_Status_Model ON tbl_Application_Model.Status = tbl_Status_Model.Id LEFT OUTER JOIN
                          tbl_LoanDetails_Model ON tbl_LoanDetails_Model.NAID = tbl_Application_Model.NAID LEFT OUTER JOIN
                          tbl_Member_Model ON tbl_LoanDetails_Model.MemId = tbl_Member_Model.MemId LEFT OUTER JOIN
-                         tbl_LoanHistory_Model ON tbl_LoanDetails_Model.MemId = tbl_LoanHistory_Model.MemId LEFT OUTER JOIN
+                         tbl_LoanHistory_Model ON tbl_LoanDetails_Model.NAID = tbl_LoanHistory_Model.NAID LEFT OUTER JOIN
                          tbl_Collection_AreaMember_Model ON tbl_Collection_AreaMember_Model.NAID = tbl_Application_Model.NAID LEFT OUTER JOIN
                          tbl_CoMaker_Model ON tbl_CoMaker_Model.MemId = tbl_Member_Model.MemId LEFT OUTER JOIN
                          tbl_MemberSavings_Model ON tbl_Member_Model.MemId = tbl_MemberSavings_Model.MemId LEFT OUTER JOIN
@@ -6448,11 +6605,17 @@ FROM            tbl_Application_Model INNER JOIN
                                FROM            tbl_fileupload_Model
                                WHERE        (Type = 1)) AS file_ ON file_.MemId = tbl_Member_Model.MemId   where tbl_Member_Model.Barangay = '" + barangay.Trim() + "' and tbl_Member_Model.City = '" + city.Trim() + "'";
                     DataTable table_ = db.SelectDb(sql_count).Tables[0];
+                    double total = 0;
                     if (table_.Rows.Count != 0)
                     {
 
                         foreach (DataRow dr in table_.Rows)
                         {
+                            
+                            double outstanding = total == 0 ? double.Parse(dr["AmountDue"].ToString()) : total;
+                            double collected = double.Parse(dr["CollectedAmount"].ToString());
+                            total = Math.Abs(outstanding - collected);
+                            
                             var item = new CollectionVM();
                             item.Fname = dr["Fname"].ToString();
                             item.Mname = dr["Mname"].ToString();
@@ -6580,7 +6743,94 @@ FROM            tbl_Application_Model INNER JOIN
             return result;
 
         }
+
+        public List<Reports_Collection> ShowAreaReports(DateTime datefrom , DateTime dateto)
+        {
+            var day_total = dashdatecomputation();
+            DataTable table = db.SelectDb_SP("sp_fieldareas").Tables[0];
+            var result = new List<Reports_Collection>();
+            DateTime startDate = DateTime.Today.AddDays(- int.Parse( day_total.totaldays));
+
+            var list = Collection_PrintedResult().Where(a => Convert.ToDateTime(a.DateCollected) >= datefrom && Convert.ToDateTime(a.DateCollected) <= dateto).ToList();
+            foreach (DataRow dr in table.Rows)
+            {
+                //  var no_payment = GetActiveCollectionDashboard(int.Parse(day_total.totaldays), dr["AreaID"].ToString()).FirstOrDefault();
+                //   var dailyCollectiblesSum = getAreaLoanSummary_2(dr["AreaID"].ToString(), "").Where(a => Convert.ToDateTime(a.DateCreated) >= datefrom && Convert.ToDateTime(a.DateCreated) <= dateto).Select(a => double.Parse(a.DailyCollectibles)).Sum();
+                ////   var advance_payment = list.Where(a => a.RefNo == group.Key.RefNo && a.AdvancePayment != null && a.AdvancePayment != "").Select(a => double.Parse(a.AdvancePayment)).Sum();
+
+                //   //var dailyCollectiblesSum = list.Where(a => a.RefNo == group.Key.RefNo && a.ApprovedDailyAmountDue != "").Select(a => double.Parse(a.ApprovedDailyAmountDue)).Sum();
+                //   var savings = getAreaLoanSummary_2(dr["AreaID"].ToString(), "").Where(a =>  Convert.ToDateTime(a.DateCreated) >= datefrom && Convert.ToDateTime(a.DateCreated) <= dateto).Select(a => double.Parse(a.TotalSavingsAmount)).Sum();
+                //   var balance = getAreaLoanSummary_2(dr["AreaID"].ToString(), "").Where(a =>  Convert.ToDateTime(a.DateCreated) >= datefrom && Convert.ToDateTime(a.DateCreated) <= dateto).Select(a => double.Parse(a.AmountDue)).Sum();
+                //   //var advance = getAreaLoanSummary_2(dr["AreaID"].ToString(), "").Where(a =>  Convert.ToDateTime(a.DateCreated) >= datefrom && Convert.ToDateTime(a.DateCreated) <= dateto).Select(a => double.Parse(a.ApprovedAdvancePayment)).Sum();
+                //   var lapses = getAreaLoanSummary_2(dr["AreaID"].ToString(), "").Where(a =>  Convert.ToDateTime(a.DateCreated) >= datefrom && Convert.ToDateTime(a.DateCreated) <= dateto).Select(a => double.Parse(a.LapsePayment)).Sum();
+                //    var collectedamount = list.Where(a => a.AreaID == dr["AreaID"].ToString()  && a.CollectedAmount != "").Select(a => double.Parse(a.CollectedAmount)).Sum();
+                //    //var fieldexpenses = getAreaLoanSummary_2(dr["AreaID"].ToString(), "").Where(a =>  Convert.ToDateTime(a.DateCreated) >= datefrom && Convert.ToDateTime(a.DateCreated) <= dateto).Select(a => double.Parse(a.FieldExpenses)).Sum();
+                //   var totalnp = getAreaLoanSummary_2(dr["AreaID"].ToString(), "").Where(a => Convert.ToDateTime(a.DateCreated) >= datefrom && Convert.ToDateTime(a.DateCreated) <= dateto && a.Payment_Method =="NO PAYMENT").ToList();
+                //   var fieldexpenses = list.Where(a => a.AreaID == dr["AreaID"].ToString()  && a.FieldExpenses != "").Select(a => double.Parse(a.FieldExpenses)).Sum();
+                //   var advance = list.Where(a => a.AreaID == dr["AreaID"].ToString() && a.ApprovedAdvancePayment != "").Select(a => double.Parse(a.ApprovedAdvancePayment)).Sum();
+                var dailyCollectiblesSum = list.Where(a => a.AreaID == dr["AreaID"].ToString() && a.ApprovedDailyAmountDue != "").Select(a => double.Parse(a.ApprovedDailyAmountDue)).Sum();
+                var savings = list.Where(a => a.AreaID == dr["AreaID"].ToString() && a.Savings != "").Select(a => double.Parse(a.Savings)).Sum();
+                var balance = list.Where(a => a.AreaID == dr["AreaID"].ToString() && a.OutstandingBalance != "").Select(a => double.Parse(a.OutstandingBalance)).Sum();
+                var advance = list.Where(a => a.AreaID == dr["AreaID"].ToString() && a.ApprovedAdvancePayment != "").Select(a => double.Parse(a.ApprovedAdvancePayment)).Sum();
+                var lapses = list.Where(a => a.AreaID == dr["AreaID"].ToString() && a.LapsePayment != "").Select(a => double.Parse(a.LapsePayment)).Sum();
+                var collectedamount = list.Where(a => a.AreaID == dr["AreaID"].ToString() && a.CollectedAmount != "").Select(a => double.Parse(a.CollectedAmount)).Sum();
+                var fieldexpenses = list.Where(a => a.AreaID == dr["AreaID"].ToString() && a.FieldExpenses != "").Select(a => double.Parse(a.FieldExpenses)).Sum();
+                var totalnp = getAreaLoanSummary_2(dr["AreaID"].ToString(), "").Where(a => Convert.ToDateTime(a.DateCreated) >= datefrom && Convert.ToDateTime(a.DateCreated) <= dateto && a.Payment_Method == "NO PAYMENT").ToList();
+                  
+
+                double collectedamount_total = dailyCollectiblesSum * double.Parse(day_total.totaldays);
+                var items = new Reports_Collection();
+              
+                items.AreaName = dr["AreaName"].ToString();
+                items.FieldOfficer = dr["Lname"].ToString() + ", " + dr["Fname"].ToString() + ", " + dr["Mname"].ToString();
+                //items.DateCollected = group.Key.DateCollected;
+                items.TotalCollection = Math.Ceiling(dailyCollectiblesSum).ToString();
+                items.TotalSavings = Math.Ceiling(double.Parse(savings.ToString())).ToString();
+                items.TotalLapses = Math.Ceiling(lapses).ToString();
+                items.CashRemit = Math.Ceiling(collectedamount).ToString();
+                items.TotalNP = totalnp.Count.ToString();
+                items.TotalAdvance = Math.Ceiling(double.Parse(advance.ToString())).ToString();
+                result.Add(items);
+
+            }
+            return result;
+        }
         public List<AreaDetailsVM> ShowArea()
+        {
+            var areas = Collection_PrintedResult().GroupBy(a => new { a.RefNo, a.DateCreated }).ToList();
+            var list = Collection_PrintedResult().ToList();
+            bool containsNow = list.Any(dt => dt.ToString() == DateTime.Parse(Convert.ToDateTime(list[0].DateCreated).ToString("yyyy-MM-dd")).ToString());
+            var res = new List<AreaDetailsVM>();
+            foreach (var group in areas)
+            {
+
+                var advance_payment = list.Where(a => a.RefNo == group.Key.RefNo && a.AdvancePayment != null && a.AdvancePayment != "").Select(a => double.Parse(a.AdvancePayment)).Sum();
+
+                var dailyCollectiblesSum = list.Where(a => a.RefNo == group.Key.RefNo && a.ApprovedDailyAmountDue != "").Select(a => double.Parse(a.ApprovedDailyAmountDue)).Sum();
+                var savings = list.Where(a => a.RefNo == group.Key.RefNo && a.Savings != "").Select(a => double.Parse(a.Savings)).Sum();
+                var balance = list.Where(a => a.RefNo == group.Key.RefNo && a.OutstandingBalance != "").Select(a => double.Parse(a.OutstandingBalance)).Sum();
+                var advance = list.Where(a => a.RefNo == group.Key.RefNo && a.ApprovedAdvancePayment != "").Select(a => double.Parse(a.ApprovedAdvancePayment)).Sum();
+                var lapses = list.Where(a => a.RefNo == group.Key.RefNo && a.LapsePayment != "").Select(a => double.Parse(a.LapsePayment)).Sum();
+                var collectedamount = list.Where(a => a.RefNo == group.Key.RefNo && a.CollectedAmount != "").Select(a => double.Parse(a.CollectedAmount)).Sum();
+                var fieldexpenses = list.Where(a => a.RefNo == group.Key.RefNo && a.FieldExpenses != "").Select(a => double.Parse(a.FieldExpenses)).Sum();
+
+                var items = new AreaDetailsVM();
+                items.TotalCollectible = Math.Ceiling(double.Parse(dailyCollectiblesSum.ToString()));
+                items.Total_Balance = Math.Ceiling(double.Parse(balance.ToString()));
+                items.Total_savings = Math.Ceiling(double.Parse(savings.ToString()));
+                items.Total_advance = Math.Ceiling(double.Parse(advance.ToString()));
+                items.Total_lapses = Math.Ceiling(lapses);
+                items.Total_collectedAmount = Math.Ceiling(collectedamount);
+                items.Collection_RefNo = group.Key.RefNo;
+                items.DateCreated = group.Key.DateCreated;
+                items.TotalItems = list.Count.ToString();
+                items.ExpectedCollection = Math.Ceiling(double.Parse(dailyCollectiblesSum.ToString()));
+                items.AdvancePayment = Math.Ceiling(advance_payment);
+                res.Add(items);
+            }
+            return res;
+        }
+        public List<AreaDetailsVM> ShowArea1()
         {
             var areas = Collection_PrintedResult().GroupBy(a => new { a.RefNo, a.DateCreated }).ToList();
             var list = Collection_PrintedResult().ToList();
